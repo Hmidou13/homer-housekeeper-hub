@@ -1,0 +1,140 @@
+import { createFileRoute } from "@tanstack/react-router";
+import { useState, useRef } from "react";
+import { RequireAuth } from "@/components/RequireAuth";
+import { Button } from "@/components/ui/button";
+import { Upload } from "lucide-react";
+import { parseMenagesCsv, parseReservationsCsv, type ParsedCleaning } from "@/lib/csv-parsers";
+import { importCleanings, type ImportResult } from "@/lib/import-service";
+import { toast } from "sonner";
+
+export const Route = createFileRoute("/import")({ component: () => <RequireAuth><ImportPage /></RequireAuth> });
+
+type Preview = {
+  rows: ParsedCleaning[];
+  ignored?: number;
+  result?: ImportResult;
+};
+
+function ImportPage() {
+  const [m, setM] = useState<Preview | null>(null);
+  const [r, setR] = useState<Preview | null>(null);
+  const [busy, setBusy] = useState(false);
+
+  return (
+    <div className="space-y-6 max-w-5xl">
+      <p className="text-sm text-muted-foreground">
+        Importez les deux rapports CSV exportés depuis Avantio. Les ménages déjà saisis par Homer (heures, statuts) ne sont jamais écrasés.
+      </p>
+
+      <Zone
+        emoji="🛏️"
+        title='Rapport "Nettoyage et services par jours"'
+        description="Génère les ménages voyageurs (et signale les cas à vérifier)."
+        accept=".csv"
+        onParsed={(text) => setM({ rows: parseMenagesCsv(text) })}
+        preview={m}
+        confirmLabel={`Importer ${m?.rows.length ?? 0} ménage${(m?.rows.length ?? 0) > 1 ? "s" : ""} voyageur(s)`}
+        onConfirm={async () => {
+          if (!m) return;
+          setBusy(true);
+          const res = await importCleanings(m.rows);
+          setM({ ...m, result: res });
+          setBusy(false);
+          toast.success(`${res.created} créés · ${res.updated} mis à jour · ${res.skipped} protégés`);
+        }}
+        busy={busy}
+      />
+
+      <Zone
+        emoji="🏠🔒"
+        title='Rapport "Liste réservation"'
+        description="Génère les séjours propriétaire et les blocages à arbitrer."
+        accept=".csv"
+        onParsed={(text) => {
+          const { rows, ignored } = parseReservationsCsv(text);
+          setR({ rows, ignored });
+        }}
+        preview={r}
+        confirmLabel={`Importer ${r?.rows.length ?? 0} ligne(s) (${r?.ignored ?? 0} ignorée(s))`}
+        onConfirm={async () => {
+          if (!r) return;
+          setBusy(true);
+          const res = await importCleanings(r.rows);
+          setR({ ...r, result: res });
+          setBusy(false);
+          toast.success(`${res.created} créés · ${res.updated} mis à jour · ${res.skipped} protégés`);
+        }}
+        busy={busy}
+      />
+    </div>
+  );
+}
+
+function Zone(props: {
+  emoji: string;
+  title: string;
+  description: string;
+  accept: string;
+  onParsed: (text: string) => void;
+  preview: Preview | null;
+  confirmLabel: string;
+  onConfirm: () => void;
+  busy: boolean;
+}) {
+  const inputRef = useRef<HTMLInputElement>(null);
+  async function handle(file: File) {
+    const text = await file.text();
+    props.onParsed(text);
+  }
+  return (
+    <section className="bg-card rounded-lg border p-5">
+      <div className="flex items-start gap-4">
+        <div className="text-3xl">{props.emoji}</div>
+        <div className="flex-1">
+          <h2 className="font-semibold text-primary">{props.title}</h2>
+          <p className="text-sm text-muted-foreground mt-1">{props.description}</p>
+        </div>
+      </div>
+      <div
+        onDragOver={(e) => e.preventDefault()}
+        onDrop={(e) => { e.preventDefault(); const f = e.dataTransfer.files?.[0]; if (f) handle(f); }}
+        onClick={() => inputRef.current?.click()}
+        className="mt-4 border-2 border-dashed rounded-lg p-8 text-center cursor-pointer hover:bg-muted/40 transition"
+      >
+        <Upload className="h-6 w-6 mx-auto text-muted-foreground" />
+        <p className="text-sm mt-2">Glissez votre CSV ici ou cliquez pour parcourir</p>
+        <input
+          ref={inputRef}
+          type="file"
+          accept={props.accept}
+          className="hidden"
+          onChange={(e) => { const f = e.target.files?.[0]; if (f) handle(f); }}
+        />
+      </div>
+
+      {props.preview && (
+        <div className="mt-4 space-y-3">
+          <div className="text-sm bg-secondary rounded p-3">
+            <strong>{props.preview.rows.length}</strong> ligne(s) détectée(s).
+            {props.preview.ignored !== undefined && <> {props.preview.ignored} ignorée(s) (déjà importées via le rapport ménages).</>}
+          </div>
+          {!props.preview.result && (
+            <Button onClick={props.onConfirm} disabled={props.busy || props.preview.rows.length === 0}>
+              {props.busy ? "Import en cours…" : props.confirmLabel}
+            </Button>
+          )}
+          {props.preview.result && (
+            <div className="text-sm bg-success/10 border border-success/30 rounded p-3 space-y-1">
+              <div>✅ <strong>{props.preview.result.created}</strong> créés</div>
+              <div>🔁 <strong>{props.preview.result.updated}</strong> mis à jour</div>
+              <div>🛡️ <strong>{props.preview.result.skipped}</strong> protégés (saisies Homer présentes)</div>
+              {props.preview.result.unmatched.length > 0 && (
+                <div className="text-warning">⚠️ {props.preview.result.unmatched.length} maison(s) à associer : {props.preview.result.unmatched.slice(0,3).join("; ")}{props.preview.result.unmatched.length > 3 ? "…" : ""}</div>
+              )}
+            </div>
+          )}
+        </div>
+      )}
+    </section>
+  );
+}
