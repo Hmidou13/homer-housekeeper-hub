@@ -14,7 +14,279 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      cleaning_contractors: {
+        Row: {
+          cleaning_id: string
+          contractor_id: string
+          created_at: string | null
+          heure_arrivee: string | null
+          heure_depart: string | null
+          id: string
+          ordre: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          cleaning_id: string
+          contractor_id: string
+          created_at?: string | null
+          heure_arrivee?: string | null
+          heure_depart?: string | null
+          id?: string
+          ordre?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          cleaning_id?: string
+          contractor_id?: string
+          created_at?: string | null
+          heure_arrivee?: string | null
+          heure_depart?: string | null
+          id?: string
+          ordre?: number | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cleaning_contractors_cleaning_id_fkey"
+            columns: ["cleaning_id"]
+            isOneToOne: false
+            referencedRelation: "cleanings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cleaning_contractors_contractor_id_fkey"
+            columns: ["contractor_id"]
+            isOneToOne: false
+            referencedRelation: "contractors"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      cleanings: {
+        Row: {
+          avantio_reservation_no: string | null
+          avantio_source: string | null
+          cas_serre: boolean | null
+          created_at: string | null
+          date_menage: string
+          equipe_avantio_info: string | null
+          heure_certification: string | null
+          id: string
+          nb_adultes_voyageurs: number | null
+          notes_homer: string | null
+          observation: string | null
+          property_id: string
+          statut: string | null
+          type_menage: string
+          updated_at: string | null
+        }
+        Insert: {
+          avantio_reservation_no?: string | null
+          avantio_source?: string | null
+          cas_serre?: boolean | null
+          created_at?: string | null
+          date_menage: string
+          equipe_avantio_info?: string | null
+          heure_certification?: string | null
+          id?: string
+          nb_adultes_voyageurs?: number | null
+          notes_homer?: string | null
+          observation?: string | null
+          property_id: string
+          statut?: string | null
+          type_menage: string
+          updated_at?: string | null
+        }
+        Update: {
+          avantio_reservation_no?: string | null
+          avantio_source?: string | null
+          cas_serre?: boolean | null
+          created_at?: string | null
+          date_menage?: string
+          equipe_avantio_info?: string | null
+          heure_certification?: string | null
+          id?: string
+          nb_adultes_voyageurs?: number | null
+          notes_homer?: string | null
+          observation?: string | null
+          property_id?: string
+          statut?: string | null
+          type_menage?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cleanings_property_id_fkey"
+            columns: ["property_id"]
+            isOneToOne: false
+            referencedRelation: "properties"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      contractors: {
+        Row: {
+          actif: boolean | null
+          couleur: string | null
+          created_at: string | null
+          email: string | null
+          id: string
+          nom: string
+          notes_internes: string | null
+          statut_recrutement: string | null
+          taux_horaire: number | null
+          telephone: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          actif?: boolean | null
+          couleur?: string | null
+          created_at?: string | null
+          email?: string | null
+          id?: string
+          nom: string
+          notes_internes?: string | null
+          statut_recrutement?: string | null
+          taux_horaire?: number | null
+          telephone?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          actif?: boolean | null
+          couleur?: string | null
+          created_at?: string | null
+          email?: string | null
+          id?: string
+          nom?: string
+          notes_internes?: string | null
+          statut_recrutement?: string | null
+          taux_horaire?: number | null
+          telephone?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      monthly_invoices: {
+        Row: {
+          annee: number
+          contractor_id: string
+          date_saisie: string | null
+          id: string
+          mois: number
+          montant_facture: number | null
+          notes: string | null
+        }
+        Insert: {
+          annee: number
+          contractor_id: string
+          date_saisie?: string | null
+          id?: string
+          mois: number
+          montant_facture?: number | null
+          notes?: string | null
+        }
+        Update: {
+          annee?: number
+          contractor_id?: string
+          date_saisie?: string | null
+          id?: string
+          mois?: number
+          montant_facture?: number | null
+          notes?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "monthly_invoices_contractor_id_fkey"
+            columns: ["contractor_id"]
+            isOneToOne: false
+            referencedRelation: "contractors"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      properties: {
+        Row: {
+          adresse_complete: string | null
+          avantio_code: string
+          boite_a_cles: string | null
+          capacite: number | null
+          code_alarme: string | null
+          code_porte: string | null
+          created_at: string | null
+          duree_standard_h: number | null
+          equipe_habituelle_id: string | null
+          id: string
+          lien_drive_photos: string | null
+          localite: string | null
+          nb_personnes_recommande: number | null
+          nom: string
+          notes: string | null
+          particularites: string | null
+          proprietaire_nom: string | null
+          proprietaire_telephone: string | null
+          statut: string | null
+          type: string | null
+          updated_at: string | null
+          wifi: string | null
+        }
+        Insert: {
+          adresse_complete?: string | null
+          avantio_code: string
+          boite_a_cles?: string | null
+          capacite?: number | null
+          code_alarme?: string | null
+          code_porte?: string | null
+          created_at?: string | null
+          duree_standard_h?: number | null
+          equipe_habituelle_id?: string | null
+          id?: string
+          lien_drive_photos?: string | null
+          localite?: string | null
+          nb_personnes_recommande?: number | null
+          nom: string
+          notes?: string | null
+          particularites?: string | null
+          proprietaire_nom?: string | null
+          proprietaire_telephone?: string | null
+          statut?: string | null
+          type?: string | null
+          updated_at?: string | null
+          wifi?: string | null
+        }
+        Update: {
+          adresse_complete?: string | null
+          avantio_code?: string
+          boite_a_cles?: string | null
+          capacite?: number | null
+          code_alarme?: string | null
+          code_porte?: string | null
+          created_at?: string | null
+          duree_standard_h?: number | null
+          equipe_habituelle_id?: string | null
+          id?: string
+          lien_drive_photos?: string | null
+          localite?: string | null
+          nb_personnes_recommande?: number | null
+          nom?: string
+          notes?: string | null
+          particularites?: string | null
+          proprietaire_nom?: string | null
+          proprietaire_telephone?: string | null
+          statut?: string | null
+          type?: string | null
+          updated_at?: string | null
+          wifi?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "properties_equipe_fk"
+            columns: ["equipe_habituelle_id"]
+            isOneToOne: false
+            referencedRelation: "contractors"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
