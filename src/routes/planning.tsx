@@ -90,7 +90,8 @@ function PlanningPage() {
 
   async function setHeure(cleaning: any, ccId: string, field: "heure_arrivee" | "heure_depart", hhmm: string) {
     const ts = hhmm ? combineDateAndTime(cleaning.date_menage, hhmm) : null;
-    await supabase.from("cleaning_contractors").update({ [field]: ts }).eq("id", ccId);
+    const update: any = { [field]: ts };
+    await supabase.from("cleaning_contractors").update(update).eq("id", ccId);
     refetch();
   }
 
