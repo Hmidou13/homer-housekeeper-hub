@@ -38,21 +38,38 @@ function MaisonsPage() {
               <th className="p-2 text-left">Localité</th>
               <th className="p-2 text-left">Type</th>
               <th className="p-2 text-right">Cap.</th>
+              <th className="p-2 text-left">Adresse</th>
+              <th className="p-2 text-left">Drive</th>
               <th className="p-2 text-left">Codes</th>
-              <th className="p-2 text-left">Équipe habit.</th>
             </tr>
           </thead>
           <tbody>
             {filtered.map((p: any) => {
-              const codesOk = p.code_porte && p.code_alarme && p.wifi;
+              const accessOk = p.code_porte || p.boite_a_cles;
+              const codesOk = p.adresse_complete && accessOk;
               return (
                 <tr key={p.id} className="border-t hover:bg-muted/40 cursor-pointer" onClick={() => setOpenId(p.id)}>
                   <td className="p-2 font-medium">{p.nom}</td>
                   <td className="p-2">{p.localite}</td>
                   <td className="p-2">{p.type}</td>
                   <td className="p-2 text-right">{p.capacite}</td>
+                  <td className="p-2 max-w-[260px]">
+                    <span className="block truncate" title={p.adresse_complete ?? ""}>{p.adresse_complete ?? "—"}</span>
+                  </td>
+                  <td className="p-2">
+                    {p.lien_drive_photos ? (
+                      <a
+                        href={p.lien_drive_photos}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        onClick={(e) => e.stopPropagation()}
+                        className="text-primary hover:underline inline-flex items-center gap-1"
+                      >
+                        📁 Ouvrir
+                      </a>
+                    ) : "—"}
+                  </td>
                   <td className="p-2">{codesOk ? "✅" : <span className="text-warning">⚠️ incomplet</span>}</td>
-                  <td className="p-2">{p.equipe?.nom ?? "—"}</td>
                 </tr>
               );
             })}

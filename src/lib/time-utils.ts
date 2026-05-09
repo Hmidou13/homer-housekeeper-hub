@@ -25,25 +25,25 @@ export function decodeHtmlEntities(s: string): string {
     .replace(/&#39;/g, "'").replace(/&nbsp;/g, " ").replace(/&lt;/g, "<").replace(/&gt;/g, ">");
 }
 
+// Heures stockées en TEXT "HH:MM" (sans timezone). Calcul direct en minutes.
 export function hoursBetween(a: string | null, b: string | null): number {
   if (!a || !b) return 0;
-  const da = new Date(a).getTime();
-  const db = new Date(b).getTime();
-  if (isNaN(da) || isNaN(db) || db <= da) return 0;
-  return (db - da) / 3_600_000;
+  const [ha, ma] = a.split(":").map(Number);
+  const [hb, mb] = b.split(":").map(Number);
+  if (isNaN(ha) || isNaN(ma) || isNaN(hb) || isNaN(mb)) return 0;
+  const minutesA = ha * 60 + ma;
+  const minutesB = hb * 60 + mb;
+  if (minutesB <= minutesA) return 0;
+  return (minutesB - minutesA) / 60;
 }
 
-export function combineDateAndTime(dateIso: string, hhmm: string): string {
-  // Returns ISO timestamp local time
-  if (!dateIso || !hhmm) return "";
-  return `${dateIso}T${hhmm}:00`;
+// Conservé pour compat éventuelle, mais l'app stocke désormais "HH:MM" tel quel.
+export function combineDateAndTime(_dateIso: string, hhmm: string): string {
+  return hhmm ?? "";
 }
 
-export function timeFromTs(ts: string | null): string {
-  if (!ts) return "";
-  const d = new Date(ts);
-  if (isNaN(d.getTime())) return "";
-  return `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
+export function timeFromTs(s: string | null): string {
+  return s ?? "";
 }
 
 export function nowHHMM(): string {
