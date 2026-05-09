@@ -6,7 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { CleaningModal } from "@/components/CleaningModal";
-import { combineDateAndTime, formatFrDate, nowHHMM, timeFromTs } from "@/lib/time-utils";
+import { formatFrDate, nowHHMM, timeFromTs } from "@/lib/time-utils";
 import { Clock } from "lucide-react";
 
 export const Route = createFileRoute("/planning")({ component: () => <RequireAuth><PlanningPage /></RequireAuth> });
