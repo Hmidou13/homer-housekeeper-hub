@@ -128,7 +128,7 @@ function RapportPage() {
   cleaningsFiltered.forEach((c: any) => {
     if (c.statut === "annule") return;
     const nom = c.property?.nom ?? "—";
-    const s = byProp.get(nom) ?? { nom, nb: 0, v: 0, p: 0, heures: 0, rows: [] };
+    const s: PropStat = byProp.get(nom) ?? { nom, nb: 0, v: 0, p: 0, heures: 0, rows: [] };
     s.nb++;
     if (c.type_menage === "proprietaire") s.p++; else s.v++;
     const heuresMenage = (c.ccs ?? []).reduce((acc: number, cc: any) => acc + hoursBetween(cc.heure_arrivee, cc.heure_depart), 0);
