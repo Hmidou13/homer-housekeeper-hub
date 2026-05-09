@@ -87,16 +87,34 @@ function RapportPage() {
     return invoices.find((i: any) => i.contractor_id === contractorId);
   }
 
-  async function setInvoice(contractorId: string, val: string) {
-    const montant = val === "" ? null : Number(val);
+  async function toggleInvoiceValide(contractorId: string, calc: number, valide: boolean) {
     const existing = invoiceFor(contractorId);
-    if (existing) {
-      await supabase.from("monthly_invoices").update({ montant_facture: montant }).eq("id", existing.id);
+    if (valide) {
+      if (existing) {
+        await supabase.from("monthly_invoices")
+          .update({ valide: true, montant_facture: existing.montant_facture ?? calc })
+          .eq("id", existing.id);
+      } else {
+        await supabase.from("monthly_invoices")
+          .insert({ contractor_id: contractorId, mois, annee, montant_facture: calc, valide: true });
+      }
     } else {
-      await supabase.from("monthly_invoices").insert({ contractor_id: contractorId, mois, annee, montant_facture: montant });
+      if (existing) {
+        await supabase.from("monthly_invoices").delete().eq("id", existing.id);
+      }
     }
     refetchInv();
-    toast.success("Facture mise à jour");
+    toast.success(valide ? "Facture validée" : "Facture dévalidée");
+  }
+
+  async function updateInvoiceAmount(contractorId: string, val: string) {
+    const montant = val === "" ? null : Number(val);
+    const existing = invoiceFor(contractorId);
+    if (!existing) return;
+    await supabase.from("monthly_invoices")
+      .update({ montant_facture: montant })
+      .eq("id", existing.id);
+    refetchInv();
   }
 
   return (
