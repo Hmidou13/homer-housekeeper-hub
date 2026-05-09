@@ -155,6 +155,7 @@ function RapportPage() {
                 <th className="p-2 text-right">Heures</th>
                 <th className="p-2 text-right">€/h</th>
                 <th className="p-2 text-right">Calculé</th>
+                <th className="p-2 text-center">✓</th>
                 <th className="p-2 text-right">Facturé</th>
                 <th className="p-2 text-right">Écart</th>
               </tr>
@@ -163,9 +164,14 @@ function RapportPage() {
               {byCList.map((s) => {
                 const calc = s.heures * s.taux;
                 const inv = invoiceFor(s.id);
+                const isValide = !!inv?.valide;
                 const fact = inv?.montant_facture ?? null;
-                const ecart = fact != null ? fact - calc : null;
-                const ecartCls = ecart == null ? "" : ecart >= 0 ? "text-success" : Math.abs(ecart) > 0.05 * calc ? "text-destructive" : "text-foreground";
+                const ecart = isValide && fact != null ? fact - calc : null;
+                const ecartCls =
+                  ecart == null ? "" :
+                  ecart >= 0 ? "text-success" :
+                  Math.abs(ecart) > 0.05 * calc ? "text-destructive" :
+                  "text-foreground";
                 return (
                   <tr key={s.id} className="border-t">
                     <td className="p-2 font-medium">{s.nom}</td>
@@ -175,15 +181,36 @@ function RapportPage() {
                     <td className="p-2 text-right tabular-nums">{s.heures.toFixed(1)}</td>
                     <td className="p-2 text-right tabular-nums">{s.taux}</td>
                     <td className="p-2 text-right tabular-nums">{calc.toFixed(2)} €</td>
-                    <td className="p-2 text-right">
-                      <Input
-                        type="number"
-                        defaultValue={fact ?? ""}
-                        className="h-7 w-24 ml-auto text-right bg-warning/5"
-                        onBlur={(e) => { if (String(e.target.value) !== String(fact ?? "")) setInvoice(s.id, e.target.value); }}
+                    <td className="p-2 text-center">
+                      <input
+                        type="checkbox"
+                        checked={isValide}
+                        onChange={(e) => toggleInvoiceValide(s.id, calc, e.target.checked)}
+                        className="h-4 w-4 cursor-pointer"
+                        title={isValide ? "Facture validée — décocher pour annuler" : "Cocher quand la facture est reçue"}
                       />
                     </td>
-                    <td className={`p-2 text-right tabular-nums ${ecartCls}`}>{ecart != null ? `${ecart.toFixed(2)} €` : "—"}</td>
+                    <td className="p-2 text-right">
+                      {isValide ? (
+                        <Input
+                          type="number"
+                          defaultValue={fact ?? calc}
+                          className="h-7 w-24 ml-auto text-right"
+                          onBlur={(e) => {
+                            if (String(e.target.value) !== String(fact ?? "")) {
+                              updateInvoiceAmount(s.id, e.target.value);
+                            }
+                          }}
+                        />
+                      ) : (
+                        <span className="text-muted-foreground italic tabular-nums">
+                          {calc.toFixed(2)} €
+                        </span>
+                      )}
+                    </td>
+                    <td className={`p-2 text-right tabular-nums ${ecartCls}`}>
+                      {ecart != null ? `${ecart.toFixed(2)} €` : "—"}
+                    </td>
                   </tr>
                 );
               })}
