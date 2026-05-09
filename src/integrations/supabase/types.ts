@@ -175,6 +175,7 @@ export type Database = {
           mois: number
           montant_facture: number | null
           notes: string | null
+          valide: boolean | null
         }
         Insert: {
           annee: number
@@ -184,6 +185,7 @@ export type Database = {
           mois: number
           montant_facture?: number | null
           notes?: string | null
+          valide?: boolean | null
         }
         Update: {
           annee?: number
@@ -193,6 +195,7 @@ export type Database = {
           mois?: number
           montant_facture?: number | null
           notes?: string | null
+          valide?: boolean | null
         }
         Relationships: [
           {

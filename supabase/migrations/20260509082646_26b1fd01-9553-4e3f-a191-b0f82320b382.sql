@@ -1,0 +1,1 @@
+ALTER TABLE public.monthly_invoices ADD COLUMN IF NOT EXISTS valide boolean DEFAULT false;
