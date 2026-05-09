@@ -12,6 +12,7 @@ export const Route = createFileRoute("/import")({ component: () => <RequireAuth>
 type Preview = {
   rows: ParsedCleaning[];
   ignored?: number;
+  excluded?: number;
   result?: ImportResult;
 };
 
@@ -31,7 +32,10 @@ function ImportPage() {
         title='Rapport "Nettoyage et services par jours"'
         description="Génère les ménages voyageurs (et signale les cas à vérifier)."
         accept=".csv"
-        onParsed={(text) => setM({ rows: parseMenagesCsv(text) })}
+        onParsed={(text) => {
+          const { rows, excluded } = parseMenagesCsv(text);
+          setM({ rows, excluded });
+        }}
         preview={m}
         confirmLabel={`Importer ${m?.rows.length ?? 0} ménage${(m?.rows.length ?? 0) > 1 ? "s" : ""} voyageur(s)`}
         onConfirm={async () => {
@@ -51,8 +55,8 @@ function ImportPage() {
         description="Génère les séjours propriétaire et les blocages à arbitrer."
         accept=".csv"
         onParsed={(text) => {
-          const { rows, ignored } = parseReservationsCsv(text);
-          setR({ rows, ignored });
+          const { rows, ignored, excluded } = parseReservationsCsv(text);
+          setR({ rows, ignored, excluded });
         }}
         preview={r}
         confirmLabel={`Importer ${r?.rows.length ?? 0} ligne(s) (${r?.ignored ?? 0} ignorée(s))`}
@@ -117,6 +121,9 @@ function Zone(props: {
           <div className="text-sm bg-secondary rounded p-3">
             <strong>{props.preview.rows.length}</strong> ligne(s) détectée(s).
             {props.preview.ignored !== undefined && <> {props.preview.ignored} ignorée(s) (déjà importées via le rapport ménages).</>}
+            {props.preview.excluded !== undefined && props.preview.excluded > 0 && (
+              <span className="text-muted-foreground"> · {props.preview.excluded} exclu(s) hors périmètre Homer</span>
+            )}
           </div>
           {!props.preview.result && (
             <Button onClick={props.onConfirm} disabled={props.busy || props.preview.rows.length === 0}>
@@ -129,7 +136,14 @@ function Zone(props: {
               <div>🔁 <strong>{props.preview.result.updated}</strong> mis à jour</div>
               <div>🛡️ <strong>{props.preview.result.skipped}</strong> protégés (saisies Homer présentes)</div>
               {props.preview.result.unmatched.length > 0 && (
-                <div className="text-warning">⚠️ {props.preview.result.unmatched.length} maison(s) à associer : {props.preview.result.unmatched.slice(0,3).join("; ")}{props.preview.result.unmatched.length > 3 ? "…" : ""}</div>
+                <details className="text-warning">
+                  <summary className="cursor-pointer">
+                    ⚠️ {props.preview.result.unmatched.length} ménage(s) non-importés (maison absente du référentiel)
+                  </summary>
+                  <ul className="mt-2 ml-4 list-disc text-xs">
+                    {props.preview.result.unmatched.map((u, i) => <li key={i}>{u}</li>)}
+                  </ul>
+                </details>
               )}
             </div>
           )}
