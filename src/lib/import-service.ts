@@ -89,5 +89,7 @@ export async function importCleanings(rows: ParsedCleaning[]): Promise<ImportRes
       }
     }
   }
+  console.log(`Import terminé : ${result.created} créés, ${result.updated} mis à jour, ${result.skipped} protégés, ${result.unmatched.length} non-matchés`);
+  console.log("Détail non-matchés :", result.unmatched);
   return result;
 }
