@@ -6,6 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { CleaningModal } from "@/components/CleaningModal";
+import { CreateCleaningModal } from "@/components/CreateCleaningModal";
 import { formatFrDate, nowHHMM, timeFromTs } from "@/lib/time-utils";
 import { Clock } from "lucide-react";
 
@@ -37,9 +38,9 @@ function PlanningPage() {
   const [statutFilter, setStatutFilter] = useState<string>(saved?.statut ?? "");
   const [search, setSearch] = useState(saved?.search ?? "");
   const [openId, setOpenId] = useState<string | null>(null);
+  const [createOpen, setCreateOpen] = useState(false);
   const qc = useQueryClient();
 
-  // persist filters
   useMemo(() => {
     if (typeof window === "undefined") return;
     localStorage.setItem(FILTERS_KEY, JSON.stringify({ from, to, equipe: equipeFilter, type: typeFilter, statut: statutFilter, search }));
@@ -59,7 +60,7 @@ function PlanningPage() {
       const { data } = await supabase
         .from("cleanings")
         .select(`id, date_menage, type_menage, statut, cas_serre, observation, notes_homer, nb_adultes_voyageurs, equipe_avantio_info, avantio_reservation_no, heure_certification,
-          property:property_id(id, nom, adresse_complete, code_porte, code_alarme, wifi, particularites, proprietaire_telephone),
+          property:property_id(id, nom, client, adresse_complete, code_porte, code_alarme, wifi, particularites, proprietaire_telephone),
           ccs:cleaning_contractors(id, ordre, contractor_id, heure_arrivee, heure_depart, contractor:contractor_id(id, nom, telephone))`)
         .gte("date_menage", from)
         .lte("date_menage", to)
@@ -76,7 +77,7 @@ function PlanningPage() {
     return true;
   });
 
-  async function setEquipe(cleaning: any, ordre: 1 | 2, contractorId: string | null) {
+  async function setEquipe(cleaning: any, ordre: number, contractorId: string | null) {
     const existing = cleaning.ccs.find((c: any) => c.ordre === ordre);
     if (!contractorId) {
       if (existing) await supabase.from("cleaning_contractors").delete().eq("id", existing.id);
@@ -113,6 +114,8 @@ function PlanningPage() {
     if (statut === "annule") return "bg-row-cancelled line-through";
     return "";
   }
+
+  const ORDRES = [1, 2, 3, 4];
 
   return (
     <div className="space-y-4 max-w-[1400px]">
@@ -158,39 +161,54 @@ function PlanningPage() {
         </div>
       </div>
 
+      <div className="flex justify-end">
+        <Button onClick={() => setCreateOpen(true)}>+ Nouveau ménage</Button>
+      </div>
+
       <div className="bg-card border rounded-lg overflow-x-auto">
         <table className="w-full text-sm">
           <thead className="bg-secondary text-xs uppercase tracking-wide text-muted-foreground">
             <tr>
-              <th className="text-left p-2">Date</th>
-              <th className="text-left p-2">Maison</th>
+              <th className="text-left p-2 sticky left-0 bg-secondary z-10">Date</th>
+              <th className="text-left p-2 sticky left-[88px] bg-secondary z-10">Maison</th>
               <th className="text-left p-2">Type</th>
               <th className="text-left p-2">Éq. 1</th>
               <th className="text-left p-2">Éq. 2</th>
+              <th className="text-left p-2">Éq. 3</th>
+              <th className="text-left p-2">Éq. 4</th>
               <th className="text-left p-2">Arr1</th>
               <th className="text-left p-2">Dép1</th>
               <th className="text-left p-2">Arr2</th>
               <th className="text-left p-2">Dép2</th>
+              <th className="text-left p-2">Arr3</th>
+              <th className="text-left p-2">Dép3</th>
+              <th className="text-left p-2">Arr4</th>
+              <th className="text-left p-2">Dép4</th>
               <th className="text-left p-2">Statut</th>
               <th className="text-left p-2"></th>
             </tr>
           </thead>
           <tbody>
             {filtered.length === 0 && (
-              <tr><td colSpan={11} className="p-6 text-center text-muted-foreground">Aucun ménage sur cette plage.</td></tr>
+              <tr><td colSpan={17} className="p-6 text-center text-muted-foreground">Aucun ménage sur cette plage.</td></tr>
             )}
             {filtered.map((c: any) => {
-              const eq1 = c.ccs.find((x: any) => x.ordre === 1);
-              const eq2 = c.ccs.find((x: any) => x.ordre === 2);
+              const eqs = ORDRES.map((o) => c.ccs.find((x: any) => x.ordre === o));
               const t = TYPE_LABEL[c.type_menage] ?? TYPE_LABEL.voyageur;
-              const noEq1 = !eq1 && c.statut !== "annule";
+              const noEq1 = !eqs[0] && c.statut !== "annule";
+              const bg = rowBg(c.statut);
               return (
-                <tr key={c.id} className={`border-t ${rowBg(c.statut)}`}>
-                  <td className="p-2 whitespace-nowrap">{formatFrDate(c.date_menage)}</td>
-                  <td className="p-2 font-medium">
+                <tr key={c.id} className={`border-t ${bg}`}>
+                  <td className={`p-2 whitespace-nowrap sticky left-0 z-10 ${bg || "bg-card"}`}>{formatFrDate(c.date_menage)}</td>
+                  <td className={`p-2 font-medium sticky left-[88px] z-10 ${bg || "bg-card"}`}>
                     <button className="hover:underline text-left" onClick={() => setOpenId(c.id)}>
                       {c.property?.nom}
                     </button>
+                    {c.property?.client && (
+                      <span className="ml-2 inline-block text-xs px-1.5 py-0.5 bg-secondary rounded text-muted-foreground">
+                        🏢 {c.property.client}
+                      </span>
+                    )}
                     {c.cas_serre && <span title="Cas serré" className="ml-1.5 text-xs bg-warning/20 text-warning px-1.5 py-0.5 rounded">⚠️</span>}
                   </td>
                   <td className={`p-2 ${t.cls}`}>
@@ -201,16 +219,15 @@ function PlanningPage() {
                       <option value="a_verifier">⚠️ À vérifier</option>
                     </select>
                   </td>
-                  <td className={`p-2 ${noEq1 ? "bg-row-cancelled/60" : ""}`}>
-                    <EquipeSelect contractors={contractors} value={eq1?.contractor_id ?? ""} onChange={(v) => setEquipe(c, 1, v || null)} />
-                  </td>
-                  <td className="p-2">
-                    <EquipeSelect contractors={contractors} value={eq2?.contractor_id ?? ""} onChange={(v) => setEquipe(c, 2, v || null)} />
-                  </td>
-                  <td className="p-2"><TimeCell disabled={!eq1} value={timeFromTs(eq1?.heure_arrivee)} onChange={(v) => eq1 && setHeure(c, eq1.id, "heure_arrivee", v)} /></td>
-                  <td className="p-2"><TimeCell disabled={!eq1} value={timeFromTs(eq1?.heure_depart)} onChange={(v) => eq1 && setHeure(c, eq1.id, "heure_depart", v)} /></td>
-                  <td className="p-2"><TimeCell disabled={!eq2} value={timeFromTs(eq2?.heure_arrivee)} onChange={(v) => eq2 && setHeure(c, eq2.id, "heure_arrivee", v)} /></td>
-                  <td className="p-2"><TimeCell disabled={!eq2} value={timeFromTs(eq2?.heure_depart)} onChange={(v) => eq2 && setHeure(c, eq2.id, "heure_depart", v)} /></td>
+                  {ORDRES.map((o, i) => (
+                    <td key={`eq-${o}`} className={`p-2 ${i === 0 && noEq1 ? "bg-row-cancelled/60" : ""}`}>
+                      <EquipeSelect contractors={contractors} value={eqs[i]?.contractor_id ?? ""} onChange={(v) => setEquipe(c, o, v || null)} />
+                    </td>
+                  ))}
+                  {ORDRES.flatMap((o, i) => [
+                    <td key={`arr-${o}`} className="p-2"><TimeCell disabled={!eqs[i]} value={timeFromTs(eqs[i]?.heure_arrivee)} onChange={(v) => eqs[i] && setHeure(c, eqs[i].id, "heure_arrivee", v)} /></td>,
+                    <td key={`dep-${o}`} className="p-2"><TimeCell disabled={!eqs[i]} value={timeFromTs(eqs[i]?.heure_depart)} onChange={(v) => eqs[i] && setHeure(c, eqs[i].id, "heure_depart", v)} /></td>,
+                  ])}
                   <td className="p-2">
                     <select className="bg-transparent text-xs" value={c.statut} onChange={(e) => setStatut(c, e.target.value)}>
                       <option value="planifie">Planifié</option>
@@ -231,6 +248,11 @@ function PlanningPage() {
         <CleaningModal
           cleaningId={openId}
           onClose={() => { setOpenId(null); qc.invalidateQueries({ queryKey: ["planning"] }); }}
+        />
+      )}
+      {createOpen && (
+        <CreateCleaningModal
+          onClose={(created) => { setCreateOpen(false); if (created) refetch(); }}
         />
       )}
     </div>

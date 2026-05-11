@@ -1,18 +1,22 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { RequireAuth } from "@/components/RequireAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { CreatePropertyModal } from "@/components/CreatePropertyModal";
+import { CreateCleaningModal } from "@/components/CreateCleaningModal";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/maisons")({ component: () => <RequireAuth><MaisonsPage /></RequireAuth> });
 
 function MaisonsPage() {
   const [search, setSearch] = useState("");
+  const [clientFilter, setClientFilter] = useState("");
   const [openId, setOpenId] = useState<string | null>(null);
+  const [createOpen, setCreateOpen] = useState(false);
 
   const { data: properties = [], refetch } = useQuery({
     queryKey: ["properties"],
@@ -22,20 +26,40 @@ function MaisonsPage() {
     },
   });
 
-  const filtered = properties.filter((p: any) =>
-    p.nom?.toLowerCase().includes(search.toLowerCase()) ||
-    p.localite?.toLowerCase().includes(search.toLowerCase())
-  );
+  const clients = useMemo(() => {
+    const set = new Set<string>();
+    properties.forEach((p: any) => { if (p.client) set.add(p.client); });
+    return [...set].sort();
+  }, [properties]);
+
+  const filtered = properties.filter((p: any) => {
+    if (clientFilter === "__homer__" && p.client) return false;
+    if (clientFilter && clientFilter !== "__homer__" && p.client !== clientFilter) return false;
+    const q = search.toLowerCase();
+    if (q && !(p.nom?.toLowerCase().includes(q) || p.localite?.toLowerCase().includes(q))) return false;
+    return true;
+  });
 
   return (
     <div className="space-y-4 max-w-[1400px]">
-      <Input placeholder="Rechercher une maison ou une localité…" value={search} onChange={(e) => setSearch(e.target.value)} className="max-w-md" />
+      <div className="flex gap-2 items-center justify-between flex-wrap">
+        <div className="flex gap-2 items-center flex-wrap">
+          <Input placeholder="Rechercher une maison ou une localité…" value={search} onChange={(e) => setSearch(e.target.value)} className="max-w-md" />
+          <select className="border rounded px-2 py-1.5 bg-background text-sm" value={clientFilter} onChange={(e) => setClientFilter(e.target.value)}>
+            <option value="">Tous les clients</option>
+            <option value="__homer__">Homer (sans client)</option>
+            {clients.map((c) => <option key={c} value={c}>{c}</option>)}
+          </select>
+        </div>
+        <Button onClick={() => setCreateOpen(true)}>+ Nouvelle maison</Button>
+      </div>
       <div className="bg-card border rounded-lg overflow-x-auto">
         <table className="w-full text-sm">
           <thead className="bg-secondary text-xs uppercase tracking-wide text-muted-foreground">
             <tr>
               <th className="p-2 text-left">Maison</th>
               <th className="p-2 text-left">Localité</th>
+              <th className="p-2 text-left">Client</th>
               <th className="p-2 text-left">Type</th>
               <th className="p-2 text-right">Cap.</th>
               <th className="p-2 text-left">Adresse</th>
@@ -51,6 +75,7 @@ function MaisonsPage() {
                 <tr key={p.id} className="border-t hover:bg-muted/40 cursor-pointer" onClick={() => setOpenId(p.id)}>
                   <td className="p-2 font-medium">{p.nom}</td>
                   <td className="p-2">{p.localite}</td>
+                  <td className="p-2">{p.client ?? "—"}</td>
                   <td className="p-2">{p.type}</td>
                   <td className="p-2 text-right">{p.capacite}</td>
                   <td className="p-2 max-w-[260px]">
@@ -77,11 +102,13 @@ function MaisonsPage() {
         </table>
       </div>
       {openId && <PropertyModal id={openId} onClose={() => { setOpenId(null); refetch(); }} />}
+      {createOpen && <CreatePropertyModal onClose={(created) => { setCreateOpen(false); if (created) refetch(); }} />}
     </div>
   );
 }
 
 function PropertyModal({ id, onClose }: { id: string; onClose: () => void }) {
+  const [scheduleOpen, setScheduleOpen] = useState(false);
   const { data: property } = useQuery({
     queryKey: ["property", id],
     queryFn: async () => {
@@ -112,6 +139,7 @@ function PropertyModal({ id, onClose }: { id: string; onClose: () => void }) {
       particularites: form.particularites,
       lien_drive_photos: form.lien_drive_photos,
       notes: form.notes,
+      client: form.client?.trim() || null,
     }).eq("id", id);
     if (error) toast.error(error.message);
     else { toast.success("Enregistré"); onClose(); }
@@ -137,6 +165,7 @@ function PropertyModal({ id, onClose }: { id: string; onClose: () => void }) {
             </div>
           </section>
           <section className="grid grid-cols-2 gap-3">
+            <Field label="Client" value={form.client} onChange={(v) => setForm({ ...form, client: v })} />
             <Field label="Téléphone propriétaire" value={form.proprietaire_telephone} onChange={(v) => setForm({ ...form, proprietaire_telephone: v })} />
             <Field label="Code porte" value={form.code_porte} onChange={(v) => setForm({ ...form, code_porte: v })} />
             <Field label="Code alarme" value={form.code_alarme} onChange={(v) => setForm({ ...form, code_alarme: v })} />
@@ -161,8 +190,12 @@ function PropertyModal({ id, onClose }: { id: string; onClose: () => void }) {
               <textarea className="w-full border rounded px-2 py-1.5 bg-background" rows={2} value={form.notes ?? ""} onChange={(e) => setForm({ ...form, notes: e.target.value })} />
             </div>
           </section>
-          <Button onClick={save}>Enregistrer</Button>
+          <div className="flex gap-2">
+            <Button onClick={save}>Enregistrer</Button>
+            <Button variant="outline" onClick={() => setScheduleOpen(true)}>+ Programmer un ménage</Button>
+          </div>
         </div>
+        {scheduleOpen && <CreateCleaningModal lockedPropertyId={id} onClose={() => setScheduleOpen(false)} />}
       </DialogContent>
     </Dialog>
   );
