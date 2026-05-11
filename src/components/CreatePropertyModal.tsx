@@ -47,7 +47,6 @@ export function CreatePropertyModal({ onClose }: { onClose: (created?: boolean) 
         proprietaire_nom: form.proprietaire_nom?.trim() || null,
         proprietaire_telephone: form.proprietaire_telephone?.trim() || null,
         client: form.client?.trim() || null,
-        avantio_source: "manuel",
         statut: "Actif",
       });
       if (error) throw error;
