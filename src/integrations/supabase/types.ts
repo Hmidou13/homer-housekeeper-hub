@@ -169,6 +169,7 @@ export type Database = {
       monthly_invoices: {
         Row: {
           annee: number
+          client: string | null
           contractor_id: string
           date_saisie: string | null
           id: string
@@ -179,6 +180,7 @@ export type Database = {
         }
         Insert: {
           annee: number
+          client?: string | null
           contractor_id: string
           date_saisie?: string | null
           id?: string
@@ -189,6 +191,7 @@ export type Database = {
         }
         Update: {
           annee?: number
+          client?: string | null
           contractor_id?: string
           date_saisie?: string | null
           id?: string
@@ -213,6 +216,7 @@ export type Database = {
           avantio_code: string
           boite_a_cles: string | null
           capacite: number | null
+          client: string | null
           code_alarme: string | null
           code_porte: string | null
           created_at: string | null
@@ -237,6 +241,7 @@ export type Database = {
           avantio_code: string
           boite_a_cles?: string | null
           capacite?: number | null
+          client?: string | null
           code_alarme?: string | null
           code_porte?: string | null
           created_at?: string | null
@@ -261,6 +266,7 @@ export type Database = {
           avantio_code?: string
           boite_a_cles?: string | null
           capacite?: number | null
+          client?: string | null
           code_alarme?: string | null
           code_porte?: string | null
           created_at?: string | null
