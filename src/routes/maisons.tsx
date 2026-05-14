@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { CreatePropertyModal } from "@/components/CreatePropertyModal";
+import { genGpsLink } from "@/lib/utils";
 import { CreateCleaningModal } from "@/components/CreateCleaningModal";
 import { toast } from "sonner";
 
@@ -129,6 +130,9 @@ function PropertyModal({ id, onClose }: { id: string; onClose: () => void }) {
   async function save() {
     const { error } = await supabase.from("properties").update({
       proprietaire_telephone: form.proprietaire_telephone,
+      localite: form.localite,
+      adresse_complete: form.adresse_complete,
+      lien_gps: form.lien_gps,
       code_porte: form.code_porte,
       code_alarme: form.code_alarme,
       wifi: form.wifi,
@@ -159,13 +163,40 @@ function PropertyModal({ id, onClose }: { id: string; onClose: () => void }) {
               <div><span className="text-muted-foreground">Code :</span> {form.avantio_code}</div>
               <div><span className="text-muted-foreground">Type :</span> {form.type}</div>
               <div><span className="text-muted-foreground">Capacité :</span> {form.capacite}</div>
-              <div><span className="text-muted-foreground">Localité :</span> {form.localite}</div>
-              <div className="col-span-2"><span className="text-muted-foreground">Adresse :</span> {form.adresse_complete}</div>
               <div className="col-span-2"><span className="text-muted-foreground">Propriétaire :</span> {form.proprietaire_nom}</div>
             </div>
           </section>
           <section className="grid grid-cols-2 gap-3">
+            <Field label="Localité" value={form.localite} onChange={(v) => setForm({ ...form, localite: v })} />
             <Field label="Client" value={form.client} onChange={(v) => setForm({ ...form, client: v })} />
+            <div className="col-span-2">
+              <Field label="Adresse complète" value={form.adresse_complete} onChange={(v) => setForm({ ...form, adresse_complete: v })} />
+            </div>
+            <div className="col-span-2">
+              <label className="text-xs text-muted-foreground">Lien GPS</label>
+              <div className="flex gap-2">
+                <Input
+                  value={form.lien_gps ?? ""}
+                  onChange={(e) => setForm({ ...form, lien_gps: e.target.value })}
+                  placeholder="https://maps.google.com/..."
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setForm({ ...form, lien_gps: genGpsLink(form.adresse_complete) })}
+                  disabled={!form.adresse_complete}
+                  title="Générer depuis l'adresse"
+                >
+                  📍 Auto
+                </Button>
+              </div>
+              {form.lien_gps && (
+                <a href={form.lien_gps} target="_blank" rel="noopener noreferrer" className="text-xs text-primary hover:underline mt-1 inline-block">
+                  Tester le lien ↗
+                </a>
+              )}
+            </div>
             <Field label="Téléphone propriétaire" value={form.proprietaire_telephone} onChange={(v) => setForm({ ...form, proprietaire_telephone: v })} />
             <Field label="Code porte" value={form.code_porte} onChange={(v) => setForm({ ...form, code_porte: v })} />
             <Field label="Code alarme" value={form.code_alarme} onChange={(v) => setForm({ ...form, code_alarme: v })} />

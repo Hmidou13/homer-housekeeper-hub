@@ -4,18 +4,33 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { genGpsLink } from "@/lib/utils";
 
-export function CreatePropertyModal({ onClose }: { onClose: (created?: boolean) => void }) {
+type InitialData = Partial<{
+  nom: string;
+  type: string;
+  localite: string;
+  adresse_complete: string;
+  capacite: string;
+  avantio_code: string | null;
+  proprietaire_nom: string;
+  proprietaire_telephone: string;
+  client: string;
+  lien_gps: string;
+}>;
+
+export function CreatePropertyModal({ onClose, initialData }: { onClose: (created?: boolean) => void; initialData?: InitialData }) {
   const [form, setForm] = useState<any>({
-    nom: "",
-    type: "Villa",
-    localite: "",
-    adresse_complete: "",
-    capacite: "",
-    avantio_code: "",
-    proprietaire_nom: "",
-    proprietaire_telephone: "",
-    client: "",
+    nom: initialData?.nom ?? "",
+    type: initialData?.type ?? "Villa",
+    localite: initialData?.localite ?? "",
+    adresse_complete: initialData?.adresse_complete ?? "",
+    capacite: initialData?.capacite ?? "",
+    avantio_code: initialData?.avantio_code ?? "",
+    proprietaire_nom: initialData?.proprietaire_nom ?? "",
+    proprietaire_telephone: initialData?.proprietaire_telephone ?? "",
+    client: initialData?.client ?? "",
+    lien_gps: initialData?.lien_gps ?? "",
   });
   const [saving, setSaving] = useState(false);
 
@@ -37,6 +52,7 @@ export function CreatePropertyModal({ onClose }: { onClose: (created?: boolean) 
     setSaving(true);
     try {
       const code = form.avantio_code?.trim() || (await generateCode());
+      const lien_gps = form.lien_gps?.trim() || genGpsLink(form.adresse_complete);
       const { error } = await supabase.from("properties").insert({
         nom: form.nom.trim(),
         type: form.type,
@@ -47,6 +63,7 @@ export function CreatePropertyModal({ onClose }: { onClose: (created?: boolean) 
         proprietaire_nom: form.proprietaire_nom?.trim() || null,
         proprietaire_telephone: form.proprietaire_telephone?.trim() || null,
         client: form.client?.trim() || null,
+        lien_gps: lien_gps || null,
         statut: "Actif",
       });
       if (error) throw error;
