@@ -130,6 +130,9 @@ function PropertyModal({ id, onClose }: { id: string; onClose: () => void }) {
   async function save() {
     const { error } = await supabase.from("properties").update({
       proprietaire_telephone: form.proprietaire_telephone,
+      localite: form.localite,
+      adresse_complete: form.adresse_complete,
+      lien_gps: form.lien_gps,
       code_porte: form.code_porte,
       code_alarme: form.code_alarme,
       wifi: form.wifi,
