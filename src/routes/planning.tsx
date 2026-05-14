@@ -291,7 +291,7 @@ function HeureInput({ cc, field, onChange, disabled }: any) {
   async function save() {
     if (!cc) return;
     if (val === (cc[field] ?? "")) return;
-    await supabase.from("cleaning_contractors").update({ [field]: val || null }).eq("id", cc.id);
+    await supabase.from("cleaning_contractors").update({ [field]: val || null } as any).eq("id", cc.id);
     onChange();
   }
   return (
