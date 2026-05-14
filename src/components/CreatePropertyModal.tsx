@@ -4,18 +4,33 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { genGpsLink } from "@/lib/utils";
 
-export function CreatePropertyModal({ onClose }: { onClose: (created?: boolean) => void }) {
+type InitialData = Partial<{
+  nom: string;
+  type: string;
+  localite: string;
+  adresse_complete: string;
+  capacite: string;
+  avantio_code: string | null;
+  proprietaire_nom: string;
+  proprietaire_telephone: string;
+  client: string;
+  lien_gps: string;
+}>;
+
+export function CreatePropertyModal({ onClose, initialData }: { onClose: (created?: boolean) => void; initialData?: InitialData }) {
   const [form, setForm] = useState<any>({
-    nom: "",
-    type: "Villa",
-    localite: "",
-    adresse_complete: "",
-    capacite: "",
-    avantio_code: "",
-    proprietaire_nom: "",
-    proprietaire_telephone: "",
-    client: "",
+    nom: initialData?.nom ?? "",
+    type: initialData?.type ?? "Villa",
+    localite: initialData?.localite ?? "",
+    adresse_complete: initialData?.adresse_complete ?? "",
+    capacite: initialData?.capacite ?? "",
+    avantio_code: initialData?.avantio_code ?? "",
+    proprietaire_nom: initialData?.proprietaire_nom ?? "",
+    proprietaire_telephone: initialData?.proprietaire_telephone ?? "",
+    client: initialData?.client ?? "",
+    lien_gps: initialData?.lien_gps ?? "",
   });
   const [saving, setSaving] = useState(false);
 
