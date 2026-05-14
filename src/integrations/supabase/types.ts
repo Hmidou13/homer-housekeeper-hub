@@ -224,6 +224,7 @@ export type Database = {
           equipe_habituelle_id: string | null
           id: string
           lien_drive_photos: string | null
+          lien_gps: string | null
           localite: string | null
           nb_personnes_recommande: number | null
           nom: string
@@ -249,6 +250,7 @@ export type Database = {
           equipe_habituelle_id?: string | null
           id?: string
           lien_drive_photos?: string | null
+          lien_gps?: string | null
           localite?: string | null
           nb_personnes_recommande?: number | null
           nom: string
@@ -274,6 +276,7 @@ export type Database = {
           equipe_habituelle_id?: string | null
           id?: string
           lien_drive_photos?: string | null
+          lien_gps?: string | null
           localite?: string | null
           nb_personnes_recommande?: number | null
           nom?: string
