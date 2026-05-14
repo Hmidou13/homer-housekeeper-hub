@@ -105,6 +105,7 @@ function Zone(props: {
   confirmLabel: string;
   onConfirm: () => void;
   busy: boolean;
+  onCreateProperty: (u: UnmatchedRow) => void;
 }) {
   const inputRef = useRef<HTMLInputElement>(null);
   async function handle(file: File) {
