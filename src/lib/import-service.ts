@@ -54,7 +54,10 @@ export async function importCleanings(rows: ParsedCleaning[]): Promise<ImportRes
       (row.property_avantio_code && byCode.get(row.property_avantio_code)) ||
       byName.get(row.property_name.toUpperCase());
     if (!propId) {
-      result.unmatched.push(`${row.avantio_reservation_no} — ${row.property_name}`);
+      result.unmatched.push({
+        property_name: row.property_name,
+        property_avantio_code: row.property_avantio_code ?? null,
+      });
       continue;
     }
     const ex = existingMap.get(row.avantio_reservation_no);
