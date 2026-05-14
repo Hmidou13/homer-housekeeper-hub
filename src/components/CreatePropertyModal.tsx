@@ -52,6 +52,7 @@ export function CreatePropertyModal({ onClose, initialData }: { onClose: (create
     setSaving(true);
     try {
       const code = form.avantio_code?.trim() || (await generateCode());
+      const lien_gps = form.lien_gps?.trim() || genGpsLink(form.adresse_complete);
       const { error } = await supabase.from("properties").insert({
         nom: form.nom.trim(),
         type: form.type,
@@ -62,6 +63,7 @@ export function CreatePropertyModal({ onClose, initialData }: { onClose: (create
         proprietaire_nom: form.proprietaire_nom?.trim() || null,
         proprietaire_telephone: form.proprietaire_telephone?.trim() || null,
         client: form.client?.trim() || null,
+        lien_gps: lien_gps || null,
         statut: "Actif",
       });
       if (error) throw error;
