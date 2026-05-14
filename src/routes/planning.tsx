@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { RequireAuth } from "@/components/RequireAuth";
 import { supabase } from "@/integrations/supabase/client";
@@ -7,8 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { CleaningModal } from "@/components/CleaningModal";
 import { CreateCleaningModal } from "@/components/CreateCleaningModal";
-import { formatFrDate, nowHHMM, timeFromTs } from "@/lib/time-utils";
-import { Clock } from "lucide-react";
+import { formatFrDate } from "@/lib/time-utils";
 
 export const Route = createFileRoute("/planning")({ component: () => <RequireAuth><PlanningPage /></RequireAuth> });
 
@@ -28,6 +27,17 @@ function loadFilters() {
   if (typeof window === "undefined") return null;
   try { return JSON.parse(localStorage.getItem(FILTERS_KEY) ?? "null"); } catch { return null; }
 }
+
+type Intervention = {
+  cleaning_id: string;
+  cleaning: any;
+  cc: any | null;
+  date_menage: string;
+  property: any;
+  type_menage: string;
+  ordre: number;
+  total_in_group: number;
+};
 
 function PlanningPage() {
   const saved = loadFilters();
@@ -69,53 +79,40 @@ function PlanningPage() {
     },
   });
 
-  const filtered = cleanings.filter((c: any) => {
+  const cleaningsFiltered = cleanings.filter((c: any) => {
     if (typeFilter && c.type_menage !== typeFilter) return false;
     if (statutFilter && c.statut !== statutFilter) return false;
-    if (equipeFilter && !c.ccs.some((cc: any) => cc.contractor_id === equipeFilter)) return false;
     if (search && !c.property?.nom?.toLowerCase().includes(search.toLowerCase())) return false;
     return true;
   });
 
-  async function setEquipe(cleaning: any, ordre: number, contractorId: string | null) {
-    const existing = cleaning.ccs.find((c: any) => c.ordre === ordre);
-    if (!contractorId) {
-      if (existing) await supabase.from("cleaning_contractors").delete().eq("id", existing.id);
-    } else if (existing) {
-      await supabase.from("cleaning_contractors").update({ contractor_id: contractorId }).eq("id", existing.id);
-    } else {
-      await supabase.from("cleaning_contractors").insert({ cleaning_id: cleaning.id, contractor_id: contractorId, ordre });
-    }
-    refetch();
-  }
+  const interventions: Intervention[] = useMemo(() => {
+    const out: Intervention[] = [];
+    cleaningsFiltered.forEach((c: any) => {
+      const ccs = (c.ccs ?? []).slice().sort((a: any, b: any) => (a.ordre ?? 0) - (b.ordre ?? 0));
+      if (ccs.length === 0) {
+        out.push({
+          cleaning_id: c.id, cleaning: c, cc: null, date_menage: c.date_menage,
+          property: c.property, type_menage: c.type_menage, ordre: 0, total_in_group: 1,
+        });
+      } else {
+        ccs.forEach((cc: any, idx: number) => {
+          out.push({
+            cleaning_id: c.id, cleaning: c, cc, date_menage: c.date_menage,
+            property: c.property, type_menage: c.type_menage,
+            ordre: cc.ordre ?? (idx + 1), total_in_group: ccs.length,
+          });
+        });
+      }
+    });
+    return out;
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [cleanings, typeFilter, statutFilter, search]);
 
-  async function setHeure(_cleaning: any, ccId: string, field: "heure_arrivee" | "heure_depart", hhmm: string) {
-    const update: any = { [field]: hhmm || null };
-    await supabase.from("cleaning_contractors").update(update).eq("id", ccId);
-    refetch();
-  }
-
-  async function setStatut(cleaning: any, statut: string) {
-    const update: any = { statut };
-    if (statut === "prete") update.heure_certification = new Date().toISOString();
-    if (cleaning.statut === "prete" && statut !== "prete") update.heure_certification = null;
-    await supabase.from("cleanings").update(update).eq("id", cleaning.id);
-    refetch();
-  }
-
-  async function setType(cleaning: any, t: string) {
-    await supabase.from("cleanings").update({ type_menage: t }).eq("id", cleaning.id);
-    refetch();
-  }
-
-  function rowBg(statut: string) {
-    if (statut === "en_cours") return "bg-row-running";
-    if (statut === "prete") return "bg-row-ready";
-    if (statut === "annule") return "bg-row-cancelled line-through";
-    return "";
-  }
-
-  const ORDRES = [1, 2, 3, 4];
+  const interventionsFiltered = interventions.filter((iv) => {
+    if (equipeFilter && iv.cc?.contractor_id !== equipeFilter) return false;
+    return true;
+  });
 
   return (
     <div className="space-y-4 max-w-[1400px]">
@@ -169,74 +166,73 @@ function PlanningPage() {
         <table className="w-full text-sm">
           <thead className="bg-secondary text-xs uppercase tracking-wide text-muted-foreground">
             <tr>
-              <th className="text-left p-2 sticky left-0 bg-secondary z-10">Date</th>
-              <th className="text-left p-2 sticky left-[88px] bg-secondary z-10">Maison</th>
-              <th className="text-left p-2">Type</th>
-              <th className="text-left p-2">Éq. 1</th>
-              <th className="text-left p-2">Éq. 2</th>
-              <th className="text-left p-2">Éq. 3</th>
-              <th className="text-left p-2">Éq. 4</th>
-              <th className="text-left p-2">Arr1</th>
-              <th className="text-left p-2">Dép1</th>
-              <th className="text-left p-2">Arr2</th>
-              <th className="text-left p-2">Dép2</th>
-              <th className="text-left p-2">Arr3</th>
-              <th className="text-left p-2">Dép3</th>
-              <th className="text-left p-2">Arr4</th>
-              <th className="text-left p-2">Dép4</th>
-              <th className="text-left p-2">Statut</th>
-              <th className="text-left p-2"></th>
+              <th className="p-2 text-left" style={{ minWidth: "110px" }}>Date</th>
+              <th className="p-2 text-left" style={{ minWidth: "180px" }}>Maison</th>
+              <th className="p-2 text-left" style={{ minWidth: "130px" }}>Type</th>
+              <th className="p-2 text-left" style={{ minWidth: "180px" }}>Équipe</th>
+              <th className="p-2 text-left" style={{ minWidth: "100px" }}>Arr</th>
+              <th className="p-2 text-left" style={{ minWidth: "100px" }}>Dép</th>
+              <th className="p-2 text-left" style={{ minWidth: "130px" }}>Statut</th>
+              <th className="p-2" style={{ width: "50px" }}></th>
             </tr>
           </thead>
           <tbody>
-            {filtered.length === 0 && (
-              <tr><td colSpan={17} className="p-6 text-center text-muted-foreground">Aucun ménage sur cette plage.</td></tr>
+            {interventionsFiltered.length === 0 && (
+              <tr><td colSpan={8} className="p-6 text-center text-muted-foreground">Aucun ménage sur cette plage.</td></tr>
             )}
-            {filtered.map((c: any) => {
-              const eqs = ORDRES.map((o) => c.ccs.find((x: any) => x.ordre === o));
-              const t = TYPE_LABEL[c.type_menage] ?? TYPE_LABEL.voyageur;
-              const noEq1 = !eqs[0] && c.statut !== "annule";
-              const bg = rowBg(c.statut);
+            {interventionsFiltered.map((iv, idx) => {
+              const prev = idx > 0 ? interventionsFiltered[idx - 1] : null;
+              const isNewGroup = !prev || prev.cleaning_id !== iv.cleaning_id;
+              const typeInfo = TYPE_LABEL[iv.type_menage] ?? TYPE_LABEL.voyageur;
               return (
-                <tr key={c.id} className={`border-t ${bg}`}>
-                  <td className={`p-2 whitespace-nowrap sticky left-0 z-10 ${bg || "bg-card"}`}>{formatFrDate(c.date_menage)}</td>
-                  <td className={`p-2 font-medium sticky left-[88px] z-10 ${bg || "bg-card"}`}>
-                    <button className="hover:underline text-left" onClick={() => setOpenId(c.id)}>
-                      {c.property?.nom}
-                    </button>
-                    {c.property?.client && (
-                      <span className="ml-2 inline-block text-xs px-1.5 py-0.5 bg-secondary rounded text-muted-foreground">
-                        🏢 {c.property.client}
+                <tr
+                  key={`${iv.cleaning_id}-${iv.ordre}`}
+                  className={`hover:bg-muted/40 ${isNewGroup ? "border-t-2 border-border" : "border-t border-border/30"}`}
+                >
+                  <td className="p-2 whitespace-nowrap">
+                    {isNewGroup ? formatFrDate(iv.date_menage) : <span className="text-muted-foreground/40">↳</span>}
+                  </td>
+                  <td className="p-2">
+                    {isNewGroup ? (
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <button className="font-medium hover:underline text-left" onClick={() => setOpenId(iv.cleaning_id)}>
+                          {iv.property?.nom}
+                        </button>
+                        {iv.cleaning.cas_serre && <span title="Cas serré" className="text-warning">⚠️</span>}
+                        {iv.property?.client && (
+                          <span className="text-xs px-1.5 py-0.5 bg-secondary rounded text-muted-foreground whitespace-nowrap">
+                            🏢 {iv.property.client}
+                          </span>
+                        )}
+                      </div>
+                    ) : (
+                      <span className="text-muted-foreground/60 text-xs italic">↳ même ménage</span>
+                    )}
+                  </td>
+                  <td className="p-2">
+                    {isNewGroup && (
+                      <span className={`px-2 py-0.5 rounded text-xs whitespace-nowrap ${typeInfo.cls}`}>
+                        {typeInfo.emoji} {typeInfo.label}
                       </span>
                     )}
-                    {c.cas_serre && <span title="Cas serré" className="ml-1.5 text-xs bg-warning/20 text-warning px-1.5 py-0.5 rounded">⚠️</span>}
                   </td>
-                  <td className={`p-2 ${t.cls}`}>
-                    <select className="bg-transparent text-xs" value={c.type_menage} onChange={(e) => setType(c, e.target.value)}>
-                      <option value="voyageur">🛏️ Voyageur</option>
-                      <option value="proprietaire">🏠 Propriétaire</option>
-                      <option value="bloque_a_arbitrer">🔒 Bloqué</option>
-                      <option value="a_verifier">⚠️ À vérifier</option>
-                    </select>
-                  </td>
-                  {ORDRES.map((o, i) => (
-                    <td key={`eq-${o}`} className={`p-2 ${i === 0 && noEq1 ? "bg-row-cancelled/60" : ""}`}>
-                      <EquipeSelect contractors={contractors} value={eqs[i]?.contractor_id ?? ""} onChange={(v) => setEquipe(c, o, v || null)} />
-                    </td>
-                  ))}
-                  {ORDRES.flatMap((o, i) => [
-                    <td key={`arr-${o}`} className="p-2"><TimeCell disabled={!eqs[i]} value={timeFromTs(eqs[i]?.heure_arrivee)} onChange={(v) => eqs[i] && setHeure(c, eqs[i].id, "heure_arrivee", v)} /></td>,
-                    <td key={`dep-${o}`} className="p-2"><TimeCell disabled={!eqs[i]} value={timeFromTs(eqs[i]?.heure_depart)} onChange={(v) => eqs[i] && setHeure(c, eqs[i].id, "heure_depart", v)} /></td>,
-                  ])}
                   <td className="p-2">
-                    <select className="bg-transparent text-xs" value={c.statut} onChange={(e) => setStatut(c, e.target.value)}>
-                      <option value="planifie">Planifié</option>
-                      <option value="en_cours">En cours</option>
-                      <option value="prete">✅ Prête</option>
-                      <option value="annule">Annulé</option>
-                    </select>
+                    <EquipeSelector cleaning={iv.cleaning} cc={iv.cc} ordre={iv.ordre} contractors={contractors} onChange={refetch} />
                   </td>
-                  <td className="p-2"><button onClick={() => setOpenId(c.id)} className="text-muted-foreground hover:text-foreground">⋯</button></td>
+                  <td className="p-2">
+                    <HeureInput cc={iv.cc} field="heure_arrivee" onChange={refetch} disabled={!iv.cc} />
+                  </td>
+                  <td className="p-2">
+                    <HeureInput cc={iv.cc} field="heure_depart" onChange={refetch} disabled={!iv.cc} />
+                  </td>
+                  <td className="p-2">
+                    {isNewGroup && <StatutSelector cleaning={iv.cleaning} onChange={refetch} />}
+                  </td>
+                  <td className="p-2 text-right">
+                    {isNewGroup && (
+                      <Button size="sm" variant="ghost" onClick={() => setOpenId(iv.cleaning_id)}>⋯</Button>
+                    )}
+                  </td>
                 </tr>
               );
             })}
@@ -259,30 +255,77 @@ function PlanningPage() {
   );
 }
 
-function EquipeSelect({ contractors, value, onChange }: { contractors: any[]; value: string; onChange: (v: string) => void }) {
+function EquipeSelector({ cleaning, cc, ordre, contractors, onChange }: any) {
+  async function handleChange(contractor_id: string) {
+    if (cc) {
+      if (!contractor_id) {
+        await supabase.from("cleaning_contractors").delete().eq("id", cc.id);
+      } else {
+        await supabase.from("cleaning_contractors").update({ contractor_id }).eq("id", cc.id);
+      }
+    } else if (contractor_id) {
+      await supabase.from("cleaning_contractors").insert({
+        cleaning_id: cleaning.id, contractor_id, ordre: ordre || 1,
+      });
+    }
+    onChange();
+  }
   return (
-    <select className="bg-transparent text-xs w-full" value={value} onChange={(e) => onChange(e.target.value)}>
-      <option value="">—</option>
-      {contractors.map((c) => <option key={c.id} value={c.id}>{c.nom}</option>)}
+    <select
+      className="border rounded px-2 py-1 bg-background text-sm w-full"
+      style={{ minWidth: "160px" }}
+      value={cc?.contractor_id ?? ""}
+      onChange={(e) => handleChange(e.target.value)}
+    >
+      <option value="">— Aucune —</option>
+      {contractors.map((c: any) => (
+        <option key={c.id} value={c.id}>{c.nom}</option>
+      ))}
     </select>
   );
 }
 
-function TimeCell({ value, onChange, disabled }: { value: string; onChange: (v: string) => void; disabled?: boolean }) {
+function HeureInput({ cc, field, onChange, disabled }: any) {
+  const [val, setVal] = useState<string>(cc?.[field] ?? "");
+  useEffect(() => { setVal(cc?.[field] ?? ""); }, [cc, field]);
+  async function save() {
+    if (!cc) return;
+    if (val === (cc[field] ?? "")) return;
+    await supabase.from("cleaning_contractors").update({ [field]: val || null } as any).eq("id", cc.id);
+    onChange();
+  }
   return (
-    <div className="flex items-center gap-1">
-      <input
-        type="time"
-        disabled={disabled}
-        className="bg-transparent text-xs w-20 disabled:opacity-30"
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-      />
-      {!disabled && (
-        <button type="button" onClick={() => onChange(nowHHMM())} title="Maintenant" className="text-muted-foreground hover:text-foreground">
-          <Clock className="h-3 w-3" />
-        </button>
-      )}
-    </div>
+    <Input
+      type="time"
+      value={val}
+      onChange={(e) => setVal(e.target.value)}
+      onBlur={save}
+      disabled={disabled}
+      className="h-8 text-sm"
+      style={{ minWidth: "90px" }}
+    />
+  );
+}
+
+function StatutSelector({ cleaning, onChange }: any) {
+  async function setStatut(statut: string) {
+    const update: any = { statut };
+    if (statut === "prete") update.heure_certification = new Date().toISOString();
+    if (cleaning.statut === "prete" && statut !== "prete") update.heure_certification = null;
+    await supabase.from("cleanings").update(update).eq("id", cleaning.id);
+    onChange();
+  }
+  return (
+    <select
+      className="border rounded px-2 py-1 bg-background text-sm"
+      style={{ minWidth: "120px" }}
+      value={cleaning.statut}
+      onChange={(e) => setStatut(e.target.value)}
+    >
+      <option value="planifie">Planifié</option>
+      <option value="en_cours">En cours</option>
+      <option value="prete">Prête</option>
+      <option value="annule">Annulé</option>
+    </select>
   );
 }
