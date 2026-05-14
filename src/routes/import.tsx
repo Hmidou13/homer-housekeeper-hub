@@ -56,6 +56,8 @@ function ImportPage() {
           toast.success(`${res.created} créés · ${res.updated} mis à jour · ${res.skipped} protégés`);
         }}
         busy={busy}
+        onCreateProperty={onCreate}
+      />__SPLIT__
       />
 
       <Zone
