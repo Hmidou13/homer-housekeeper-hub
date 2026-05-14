@@ -4,6 +4,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { formatFrDate } from "@/lib/time-utils";
+import { genGpsLink } from "@/lib/utils";
 import { Copy, MessageCircle } from "lucide-react";
 import { toast } from "sonner";
 
