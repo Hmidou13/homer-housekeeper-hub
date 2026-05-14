@@ -22,6 +22,13 @@ function ImportPage() {
   const [m, setM] = useState<Preview | null>(null);
   const [r, setR] = useState<Preview | null>(null);
   const [busy, setBusy] = useState(false);
+  const [createPropertyData, setCreatePropertyData] = useState<any | null>(null);
+
+  const onCreate = (u: UnmatchedRow) => setCreatePropertyData({
+    nom: u.property_name,
+    avantio_code: u.property_avantio_code ?? "",
+    type: guessPropertyType(u.property_name),
+  });
 
   return (
     <div className="space-y-6 max-w-5xl">
