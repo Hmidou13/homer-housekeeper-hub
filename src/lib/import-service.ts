@@ -1,11 +1,16 @@
 import { supabase } from "@/integrations/supabase/client";
 import type { ParsedCleaning } from "./csv-parsers";
 
+export type UnmatchedRow = {
+  property_name: string;
+  property_avantio_code: string | null;
+};
+
 export type ImportResult = {
   created: number;
   updated: number;
   skipped: number; // already exists with Homer data
-  unmatched: string[]; // reservation refs without a property match
+  unmatched: UnmatchedRow[];
 };
 
 export async function importCleanings(rows: ParsedCleaning[]): Promise<ImportResult> {
