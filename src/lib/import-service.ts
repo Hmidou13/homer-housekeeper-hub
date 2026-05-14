@@ -97,6 +97,14 @@ export async function importCleanings(rows: ParsedCleaning[]): Promise<ImportRes
       }
     }
   }
+  // Dedup unmatched by name+code
+  const seen = new Set<string>();
+  result.unmatched = result.unmatched.filter((u) => {
+    const k = `${u.property_name}|${u.property_avantio_code ?? ""}`;
+    if (seen.has(k)) return false;
+    seen.add(k);
+    return true;
+  });
   console.log(`Import terminé : ${result.created} créés, ${result.updated} mis à jour, ${result.skipped} protégés, ${result.unmatched.length} non-matchés`);
   console.log("Détail non-matchés :", result.unmatched);
   return result;
