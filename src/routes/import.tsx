@@ -57,7 +57,6 @@ function ImportPage() {
         }}
         busy={busy}
         onCreateProperty={onCreate}
-      />__SPLIT__
       />
 
       <Zone
@@ -80,7 +79,18 @@ function ImportPage() {
           toast.success(`${res.created} créés · ${res.updated} mis à jour · ${res.skipped} protégés`);
         }}
         busy={busy}
+        onCreateProperty={onCreate}
       />
+
+      {createPropertyData && (
+        <CreatePropertyModal
+          initialData={createPropertyData}
+          onClose={(created) => {
+            setCreatePropertyData(null);
+            if (created) toast.success("Maison créée. Relancez l'import pour intégrer le(s) ménage(s) concerné(s).");
+          }}
+        />
+      )}
     </div>
   );
 }
