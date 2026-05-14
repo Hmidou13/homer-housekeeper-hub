@@ -162,8 +162,18 @@ function Zone(props: {
                   <summary className="cursor-pointer">
                     ⚠️ {props.preview.result.unmatched.length} ménage(s) non-importés (maison absente du référentiel)
                   </summary>
-                  <ul className="mt-2 ml-4 list-disc text-xs">
-                    {props.preview.result.unmatched.map((u, i) => <li key={i}>{u}</li>)}
+                  <ul className="mt-2 ml-4 space-y-1.5 text-xs">
+                    {props.preview.result.unmatched.map((u, i) => (
+                      <li key={i} className="flex items-center justify-between gap-2 bg-warning/10 rounded px-2 py-1">
+                        <span>
+                          {u.property_name}
+                          {u.property_avantio_code ? <span className="text-muted-foreground"> (code: {u.property_avantio_code})</span> : null}
+                        </span>
+                        <Button size="sm" variant="outline" onClick={() => props.onCreateProperty(u)}>
+                          🆕 Créer cette maison
+                        </Button>
+                      </li>
+                    ))}
                   </ul>
                 </details>
               )}
