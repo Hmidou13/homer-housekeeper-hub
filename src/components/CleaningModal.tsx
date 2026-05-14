@@ -89,10 +89,12 @@ function composeMessage(c: any, p: any, contractor: any): string {
   const prenom = contractor?.nom?.split(" ")[0] ?? "";
   const date = formatFrDate(c.date_menage);
   const typeLabel = c.type_menage === "proprietaire" ? "Propriétaire" : "Voyageur";
+  const lienGps = p?.lien_gps || genGpsLink(p?.adresse_complete) || "";
   return [
     `Bonjour ${prenom},`,
     `Le ${date} : ménage ${p?.nom ?? ""}`,
     `Adresse : ${p?.adresse_complete ?? ""}`,
+    lienGps ? `📍 GPS : ${lienGps}` : "",
     `Code porte : ${p?.code_porte || "à venir"}`,
     `Code alarme : ${p?.code_alarme || "à venir"}`,
     `Wifi : ${p?.wifi || "à venir"}`,
@@ -100,5 +102,5 @@ function composeMessage(c: any, p: any, contractor: any): string {
     `Adultes prévus : ${c.nb_adultes_voyageurs ?? "—"}`,
     `Particularités : ${p?.particularites || "RAS"}`,
     `Merci de me confirmer ton arrivée et ton départ.`,
-  ].join("\n");
+  ].filter(Boolean).join("\n");
 }
