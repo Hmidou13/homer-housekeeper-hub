@@ -4,7 +4,9 @@ import { RequireAuth } from "@/components/RequireAuth";
 import { Button } from "@/components/ui/button";
 import { Upload } from "lucide-react";
 import { parseMenagesCsv, parseReservationsCsv, type ParsedCleaning } from "@/lib/csv-parsers";
-import { importCleanings, type ImportResult } from "@/lib/import-service";
+import { importCleanings, type ImportResult, type UnmatchedRow } from "@/lib/import-service";
+import { CreatePropertyModal } from "@/components/CreatePropertyModal";
+import { guessPropertyType } from "@/lib/utils";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/import")({ component: () => <RequireAuth><ImportPage /></RequireAuth> });
