@@ -34,7 +34,10 @@ export function hoursBetween(a: string | null, b: string | null): number {
   const minutesA = ha * 60 + ma;
   const minutesB = hb * 60 + mb;
   if (minutesB <= minutesA) return 0;
-  return (minutesB - minutesA) / 60;
+  const diffMinutes = minutesB - minutesA;
+  // Arrondi au supérieur à 30 minutes (facturation demi-heure)
+  const halfHours = Math.ceil(diffMinutes / 30);
+  return halfHours * 0.5;
 }
 
 // Conservé pour compat éventuelle, mais l'app stocke désormais "HH:MM" tel quel.
