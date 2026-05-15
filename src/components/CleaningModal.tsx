@@ -40,9 +40,6 @@ export function CleaningModal({ cleaningId, onClose }: { cleaningId: string; onC
   if (!c) return null;
   const p = (c as any).property;
   const ccs: any[] = (c as any).ccs ?? [];
-  const eq1 = ccs.find((x: any) => x.ordre === 1);
-
-  const message = composeMessage(c, p, eq1?.contractor);
 
   async function refetchCleaning() {
     await qc.invalidateQueries({ queryKey: ["cleaning", cleaningId] });
@@ -75,12 +72,12 @@ export function CleaningModal({ cleaningId, onClose }: { cleaningId: string; onC
     refetchCleaning();
   }
 
-  function copyMsg() { navigator.clipboard.writeText(message); toast.success("Message copié"); }
-  function openWa() {
-    const tel = (eq1?.contractor?.telephone ?? "").replace(/[^\d]/g, "");
-    const url = tel
-      ? `https://wa.me/${tel}?text=${encodeURIComponent(message)}`
-      : `https://wa.me/?text=${encodeURIComponent(message)}`;
+  function copyMessageFor(message: string, prenom: string) {
+    navigator.clipboard.writeText(message);
+    toast.success(`Message pour ${prenom} copié`);
+  }
+  function openWaFor(message: string, tel: string) {
+    const url = `https://wa.me/${tel}?text=${encodeURIComponent(message)}`;
     window.open(url, "_blank");
   }
 
@@ -159,25 +156,69 @@ export function CleaningModal({ cleaningId, onClose }: { cleaningId: string; onC
             <Button size="sm" className="mt-2" onClick={saveNotes}>Enregistrer notes</Button>
           </section>
 
-          <section className="border rounded p-3 space-y-2">
-            <div className="text-xs uppercase text-muted-foreground">Message WhatsApp</div>
-            <pre className="text-xs whitespace-pre-wrap bg-secondary p-3 rounded">{message}</pre>
-            <div className="flex gap-2">
-              <Button size="sm" variant="outline" onClick={copyMsg}><Copy className="h-3 w-3 mr-1" /> Copier</Button>
-              <Button size="sm" onClick={openWa}><MessageCircle className="h-3 w-3 mr-1" /> Ouvrir WhatsApp</Button>
-            </div>
-          </section>
+          {(() => {
+            const ccsWithContractor = ccs.filter((cc: any) => cc.contractor_id && cc.contractor);
+            if (ccsWithContractor.length === 0) {
+              return (
+                <section className="border rounded p-3">
+                  <div className="text-xs uppercase text-muted-foreground">Message WhatsApp</div>
+                  <div className="text-sm text-muted-foreground italic mt-2">
+                    Aucune équipe affectée à ce ménage. Affectez une équipe pour générer un message.
+                  </div>
+                </section>
+              );
+            }
+            return (
+              <section className="space-y-3">
+                <div className="text-xs uppercase text-muted-foreground">Message WhatsApp</div>
+                {[...ccsWithContractor]
+                  .sort((a: any, b: any) => (a.ordre ?? 0) - (b.ordre ?? 0))
+                  .map((cc: any) => {
+                    const message = composeMessage(c, p, cc);
+                    const prenom = cc.contractor?.nom?.split(" ")[0] ?? "";
+                    const tel = (cc.contractor?.telephone ?? "").replace(/[^\d]/g, "");
+                    const hasTel = tel.length > 0;
+                    return (
+                      <div key={cc.id} className="border rounded p-3 space-y-2">
+                        <div className="text-xs font-semibold text-primary">
+                          Pour {cc.contractor?.nom ?? "—"}
+                        </div>
+                        <pre className="text-xs whitespace-pre-wrap bg-secondary p-3 rounded">{message}</pre>
+                        <div className="flex gap-2 items-center flex-wrap">
+                          <Button size="sm" variant="outline" onClick={() => copyMessageFor(message, prenom)}>
+                            <Copy className="h-3 w-3 mr-1" /> Copier
+                          </Button>
+                          {hasTel ? (
+                            <Button size="sm" onClick={() => openWaFor(message, tel)}>
+                              <MessageCircle className="h-3 w-3 mr-1" /> Ouvrir WhatsApp {prenom}
+                            </Button>
+                          ) : (
+                            <span className="text-xs text-destructive flex items-center gap-1">
+                              ⚠️ Téléphone manquant pour {prenom} — Ajouter dans la page Équipes
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+              </section>
+            );
+          })()}
         </div>
       </DialogContent>
     </Dialog>
   );
 }
 
-function composeMessage(c: any, p: any, contractor: any): string {
+function composeMessage(c: any, p: any, cc: any): string {
+  const contractor = cc?.contractor;
   const prenom = contractor?.nom?.split(" ")[0] ?? "";
   const date = formatFrDate(c.date_menage);
   const typeLabel = c.type_menage === "proprietaire" ? "Propriétaire" : "Voyageur";
   const lienGps = p?.lien_gps || genGpsLink(p?.adresse_complete) || "";
+  const arr = cc?.heure_arrivee;
+  const dep = cc?.heure_depart;
+  const horaire = (arr && dep) ? `${arr} → ${dep}` : "à confirmer";
   return [
     `Bonjour ${prenom},`,
     `Le ${date} : ménage ${p?.nom ?? ""}`,
@@ -188,6 +229,7 @@ function composeMessage(c: any, p: any, contractor: any): string {
     `Wifi : ${p?.wifi || "à venir"}`,
     `Type : ${typeLabel}`,
     `Adultes prévus : ${c.nb_adultes_voyageurs ?? "—"}`,
+    `Horaire prévu : ${horaire}`,
     `Particularités : ${p?.particularites || "RAS"}`,
     `Merci de me confirmer ton arrivée et ton départ.`,
   ].filter(Boolean).join("\n");
