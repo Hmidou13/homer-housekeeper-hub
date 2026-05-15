@@ -210,11 +210,15 @@ export function CleaningModal({ cleaningId, onClose }: { cleaningId: string; onC
   );
 }
 
-function composeMessage(c: any, p: any, contractor: any): string {
+function composeMessage(c: any, p: any, cc: any): string {
+  const contractor = cc?.contractor;
   const prenom = contractor?.nom?.split(" ")[0] ?? "";
   const date = formatFrDate(c.date_menage);
   const typeLabel = c.type_menage === "proprietaire" ? "Propriétaire" : "Voyageur";
   const lienGps = p?.lien_gps || genGpsLink(p?.adresse_complete) || "";
+  const arr = cc?.heure_arrivee;
+  const dep = cc?.heure_depart;
+  const horaire = (arr && dep) ? `${arr} → ${dep}` : "à confirmer";
   return [
     `Bonjour ${prenom},`,
     `Le ${date} : ménage ${p?.nom ?? ""}`,
@@ -225,6 +229,7 @@ function composeMessage(c: any, p: any, contractor: any): string {
     `Wifi : ${p?.wifi || "à venir"}`,
     `Type : ${typeLabel}`,
     `Adultes prévus : ${c.nb_adultes_voyageurs ?? "—"}`,
+    `Horaire prévu : ${horaire}`,
     `Particularités : ${p?.particularites || "RAS"}`,
     `Merci de me confirmer ton arrivée et ton départ.`,
   ].filter(Boolean).join("\n");
