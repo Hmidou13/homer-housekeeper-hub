@@ -37,7 +37,16 @@ type Intervention = {
   type_menage: string;
   ordre: number;
   total_in_group: number;
+  is_add_button: boolean;
 };
+
+function blockRowClass(iv: Intervention, isNewGroup: boolean): string {
+  return [
+    "border-l-4",
+    iv.total_in_group > 1 ? "border-l-primary/40 bg-muted/30" : "border-l-transparent",
+    isNewGroup ? "border-t-2 border-t-border" : "border-t border-t-border/20",
+  ].join(" ");
+}
 
 function PlanningPage() {
   const saved = loadFilters();
