@@ -72,12 +72,12 @@ export function CleaningModal({ cleaningId, onClose }: { cleaningId: string; onC
     refetchCleaning();
   }
 
-  function copyMsg() { navigator.clipboard.writeText(message); toast.success("Message copié"); }
-  function openWa() {
-    const tel = (eq1?.contractor?.telephone ?? "").replace(/[^\d]/g, "");
-    const url = tel
-      ? `https://wa.me/${tel}?text=${encodeURIComponent(message)}`
-      : `https://wa.me/?text=${encodeURIComponent(message)}`;
+  function copyMessageFor(message: string, prenom: string) {
+    navigator.clipboard.writeText(message);
+    toast.success(`Message pour ${prenom} copié`);
+  }
+  function openWaFor(message: string, tel: string) {
+    const url = `https://wa.me/${tel}?text=${encodeURIComponent(message)}`;
     window.open(url, "_blank");
   }
 
