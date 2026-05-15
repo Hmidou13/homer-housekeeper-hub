@@ -220,10 +220,34 @@ function PlanningPage() {
               const prev = idx > 0 ? interventionsFiltered[idx - 1] : null;
               const isNewGroup = !prev || prev.cleaning_id !== iv.cleaning_id;
               const typeInfo = TYPE_LABEL[iv.type_menage] ?? TYPE_LABEL.voyageur;
+
+              if (iv.is_add_button) {
+                return (
+                  <tr
+                    key={`${iv.cleaning_id}-add`}
+                    className={`hover:bg-muted/40 ${blockRowClass(iv, isNewGroup)}`}
+                  >
+                    <td className="p-2"></td>
+                    <td className="p-2"></td>
+                    <td className="p-2"></td>
+                    <td className="p-2" colSpan={3}>
+                      <button
+                        onClick={() => addEquipeToCleaning(iv.cleaning_id, iv.ordre)}
+                        className="text-xs text-primary hover:underline"
+                      >
+                        + Ajouter une équipe
+                      </button>
+                    </td>
+                    <td className="p-2"></td>
+                    <td className="p-2"></td>
+                  </tr>
+                );
+              }
+
               return (
                 <tr
                   key={`${iv.cleaning_id}-${iv.ordre}`}
-                  className={`hover:bg-muted/40 ${isNewGroup ? "border-t-2 border-border" : "border-t border-border/30"}`}
+                  className={`hover:bg-muted/40 ${blockRowClass(iv, isNewGroup)}`}
                 >
                   <td className="p-2 whitespace-nowrap">
                     {isNewGroup ? formatFrDate(iv.date_menage) : <span className="text-muted-foreground/40">↳</span>}
