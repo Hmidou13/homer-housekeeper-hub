@@ -17,7 +17,7 @@ export type Database = {
       cleaning_contractors: {
         Row: {
           cleaning_id: string
-          contractor_id: string
+          contractor_id: string | null
           created_at: string | null
           heure_arrivee: string | null
           heure_depart: string | null
@@ -27,7 +27,7 @@ export type Database = {
         }
         Insert: {
           cleaning_id: string
-          contractor_id: string
+          contractor_id?: string | null
           created_at?: string | null
           heure_arrivee?: string | null
           heure_depart?: string | null
@@ -37,7 +37,7 @@ export type Database = {
         }
         Update: {
           cleaning_id?: string
-          contractor_id?: string
+          contractor_id?: string | null
           created_at?: string | null
           heure_arrivee?: string | null
           heure_depart?: string | null

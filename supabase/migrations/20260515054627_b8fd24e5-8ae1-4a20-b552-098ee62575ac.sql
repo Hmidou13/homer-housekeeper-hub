@@ -1,0 +1,1 @@
+ALTER TABLE public.cleaning_contractors ALTER COLUMN contractor_id DROP NOT NULL;
