@@ -99,18 +99,30 @@ function PlanningPage() {
     const out: Intervention[] = [];
     cleaningsFiltered.forEach((c: any) => {
       const ccs = (c.ccs ?? []).slice().sort((a: any, b: any) => (a.ordre ?? 0) - (b.ordre ?? 0));
-      if (ccs.length === 0) {
+      const realCount = ccs.length;
+      if (realCount === 0) {
         out.push({
           cleaning_id: c.id, cleaning: c, cc: null, date_menage: c.date_menage,
           property: c.property, type_menage: c.type_menage, ordre: 0, total_in_group: 1,
+          is_add_button: false,
         });
       } else {
         ccs.forEach((cc: any, idx: number) => {
           out.push({
             cleaning_id: c.id, cleaning: c, cc, date_menage: c.date_menage,
             property: c.property, type_menage: c.type_menage,
-            ordre: cc.ordre ?? (idx + 1), total_in_group: ccs.length,
+            ordre: cc.ordre ?? (idx + 1), total_in_group: realCount,
+            is_add_button: false,
           });
+        });
+      }
+      if (realCount < 4) {
+        const maxOrdre = ccs.reduce((m: number, cc: any) => Math.max(m, cc.ordre ?? 0), 0);
+        out.push({
+          cleaning_id: c.id, cleaning: c, cc: null, date_menage: c.date_menage,
+          property: c.property, type_menage: c.type_menage,
+          ordre: maxOrdre + 1, total_in_group: realCount,
+          is_add_button: true,
         });
       }
     });
@@ -118,10 +130,25 @@ function PlanningPage() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [cleanings, typeFilter, statutFilter, search]);
 
-  const interventionsFiltered = interventions.filter((iv) => {
-    if (equipeFilter && iv.cc?.contractor_id !== equipeFilter) return false;
-    return true;
-  });
+  const interventionsFiltered = useMemo(() => {
+    if (!equipeFilter) return interventions;
+    const matchingCleaningIds = new Set(
+      interventions
+        .filter((iv) => !iv.is_add_button && iv.cc?.contractor_id === equipeFilter)
+        .map((iv) => iv.cleaning_id)
+    );
+    return interventions.filter((iv) => {
+      if (iv.is_add_button) return matchingCleaningIds.has(iv.cleaning_id);
+      return iv.cc?.contractor_id === equipeFilter;
+    });
+  }, [interventions, equipeFilter]);
+
+  async function addEquipeToCleaning(cleaning_id: string, ordre: number) {
+    await supabase.from("cleaning_contractors").insert({
+      cleaning_id, contractor_id: null as any, ordre,
+    });
+    refetch();
+  }
 
   return (
     <div className="space-y-4 max-w-[1400px]">
