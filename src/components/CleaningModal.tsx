@@ -40,9 +40,6 @@ export function CleaningModal({ cleaningId, onClose }: { cleaningId: string; onC
   if (!c) return null;
   const p = (c as any).property;
   const ccs: any[] = (c as any).ccs ?? [];
-  const eq1 = ccs.find((x: any) => x.ordre === 1);
-
-  const message = composeMessage(c, p, eq1?.contractor);
 
   async function refetchCleaning() {
     await qc.invalidateQueries({ queryKey: ["cleaning", cleaningId] });
