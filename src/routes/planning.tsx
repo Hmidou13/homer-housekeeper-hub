@@ -143,10 +143,17 @@ function PlanningPage() {
     });
   }, [interventions, equipeFilter]);
 
-  async function addEquipeToCleaning(cleaning_id: string, ordre: number) {
+  async function addEquipeToCleaning(cleaning_id: string, ordre: number, dateMenage: string) {
     await supabase.from("cleaning_contractors").insert({
-      cleaning_id, contractor_id: null as any, ordre,
+      cleaning_id, contractor_id: null as any, ordre, date_intervention: dateMenage,
     });
+    refetch();
+  }
+
+  async function updateDateIntervention(ccId: string, date: string) {
+    await supabase.from("cleaning_contractors")
+      .update({ date_intervention: date || null })
+      .eq("id", ccId);
     refetch();
   }
 
