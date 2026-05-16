@@ -236,7 +236,7 @@ export function CleaningModal({ cleaningId, onClose }: { cleaningId: string; onC
 function composeMessage(c: any, p: any, cc: any): string {
   const contractor = cc?.contractor;
   const prenom = contractor?.nom?.split(" ")[0] ?? "";
-  const date = formatFrDate(c.date_menage);
+  const date = formatFrDate(cc?.date_intervention ?? c.date_menage);
   const typeLabel = c.type_menage === "proprietaire" ? "Propriétaire" : "Voyageur";
   const lienGps = p?.lien_gps || genGpsLink(p?.adresse_complete) || "";
   const arr = cc?.heure_arrivee;
