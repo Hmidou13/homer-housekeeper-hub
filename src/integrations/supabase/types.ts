@@ -19,6 +19,7 @@ export type Database = {
           cleaning_id: string
           contractor_id: string | null
           created_at: string | null
+          date_intervention: string | null
           heure_arrivee: string | null
           heure_depart: string | null
           id: string
@@ -29,6 +30,7 @@ export type Database = {
           cleaning_id: string
           contractor_id?: string | null
           created_at?: string | null
+          date_intervention?: string | null
           heure_arrivee?: string | null
           heure_depart?: string | null
           id?: string
@@ -39,6 +41,7 @@ export type Database = {
           cleaning_id?: string
           contractor_id?: string | null
           created_at?: string | null
+          date_intervention?: string | null
           heure_arrivee?: string | null
           heure_depart?: string | null
           id?: string
