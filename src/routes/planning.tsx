@@ -257,7 +257,21 @@ function PlanningPage() {
                   className={`hover:bg-muted/40 ${blockRowClass(iv, isNewGroup)}`}
                 >
                   <td className="p-2 whitespace-nowrap">
-                    {isNewGroup ? formatFrDate(iv.date_menage) : <span className="text-muted-foreground/40">↳</span>}
+                    {iv.cc ? (
+                      <div className="flex flex-col gap-0.5">
+                        {isNewGroup && (
+                          <span className="text-[10px] text-muted-foreground">Avantio : {formatFrDate(iv.date_menage)}</span>
+                        )}
+                        <input
+                          type="date"
+                          className="border rounded px-2 py-1 bg-background text-sm"
+                          value={iv.cc.date_intervention ?? iv.date_menage}
+                          onChange={(e) => updateDateIntervention(iv.cc.id, e.target.value)}
+                        />
+                      </div>
+                    ) : (
+                      <span>{formatFrDate(iv.date_menage)}</span>
+                    )}
                   </td>
                   <td className="p-2">
                     {isNewGroup ? (
