@@ -68,17 +68,31 @@ export function CleaningModal({ cleaningId, onClose }: { cleaningId: string; onC
       cleaning_id: cleaningId,
       contractor_id: null as any,
       ordre: maxOrdre + 1,
+      date_intervention: (c as any).date_menage,
     });
     refetchCleaning();
+  }
+
+  function normalizePhoneFr(raw: string | null | undefined): string {
+    if (!raw) return "";
+    let digits = raw.replace(/[^\d+]/g, "");
+    digits = digits.replace(/^\+/, "");
+    if (digits.startsWith("0")) digits = "33" + digits.slice(1);
+    return digits;
   }
 
   function copyMessageFor(message: string, prenom: string) {
     navigator.clipboard.writeText(message);
     toast.success(`Message pour ${prenom} copié`);
   }
-  function openWaFor(message: string, tel: string) {
+  function openWaFor(message: string, telRaw: string) {
+    const tel = normalizePhoneFr(telRaw);
+    if (!tel) {
+      toast.error("Numéro de téléphone invalide");
+      return;
+    }
     const url = `https://wa.me/${tel}?text=${encodeURIComponent(message)}`;
-    window.open(url, "_blank");
+    window.open(url, "_blank", "noopener,noreferrer");
   }
 
   const sortedCcs = [...ccs].sort((a, b) => (a.ordre ?? 0) - (b.ordre ?? 0));
