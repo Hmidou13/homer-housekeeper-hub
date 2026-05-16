@@ -119,10 +119,10 @@ export function CleaningModal({ cleaningId, onClose }: { cleaningId: string; onC
             ) : (
               <div className="space-y-2">
                 {sortedCcs.map((cc: any) => (
-                  <div key={cc.id} className="flex items-center gap-2">
+                  <div key={cc.id} className="flex items-center gap-2 flex-wrap">
                     <span className="text-xs text-muted-foreground w-12 shrink-0">Éq.{cc.ordre}</span>
                     <select
-                      className="border rounded px-2 py-1 bg-background text-sm flex-1 min-w-0"
+                      className="border rounded px-2 py-1 bg-background text-sm flex-1 min-w-[140px]"
                       value={cc.contractor_id ?? ""}
                       onChange={(e) => updateCc(cc.id, { contractor_id: e.target.value || null })}
                     >
@@ -131,6 +131,14 @@ export function CleaningModal({ cleaningId, onClose }: { cleaningId: string; onC
                         <option key={co.id} value={co.id}>{co.nom}</option>
                       ))}
                     </select>
+                    <Input
+                      type="date"
+                      className="h-8 text-sm"
+                      style={{ minWidth: "140px" }}
+                      value={cc.date_intervention ?? (c as any).date_menage}
+                      onChange={(e) => updateCc(cc.id, { date_intervention: e.target.value || null })}
+                      title="Date d'intervention de cette équipe"
+                    />
                     <Input
                       type="time"
                       className="h-8 w-24 text-sm"
