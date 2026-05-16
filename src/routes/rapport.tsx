@@ -67,6 +67,18 @@ function RapportPage() {
   const lastDay = new Date(annee, mois, 0).getDate();
   const monthEnd = `${annee}-${String(mois).padStart(2,"0")}-${String(lastDay).padStart(2,"0")}`;
 
+  // On charge les ménages dont la date Avantio OU la date d'intervention d'au moins une équipe
+  // tombe dans le mois. On élargit la fenêtre Avantio de ±15 jours pour capturer les cas où
+  // l'équipe intervient le mois suivant/précédent.
+  const wideStart = (() => {
+    const d = new Date(annee, mois - 1, 1); d.setDate(d.getDate() - 15);
+    return d.toISOString().slice(0, 10);
+  })();
+  const wideEnd = (() => {
+    const d = new Date(annee, mois - 1, lastDay); d.setDate(d.getDate() + 15);
+    return d.toISOString().slice(0, 10);
+  })();
+
   const { data: cleanings = [] } = useQuery({
     queryKey: ["rapport-cleanings", mois, annee],
     queryFn: async () => {
@@ -74,9 +86,9 @@ function RapportPage() {
         .from("cleanings")
         .select(`id, date_menage, type_menage, statut,
           property:property_id(nom, client),
-          ccs:cleaning_contractors(contractor_id, ordre, heure_arrivee, heure_depart, contractor:contractor_id(nom, taux_horaire))`)
-        .gte("date_menage", monthStart)
-        .lte("date_menage", monthEnd);
+          ccs:cleaning_contractors(contractor_id, ordre, date_intervention, heure_arrivee, heure_depart, contractor:contractor_id(nom, taux_horaire))`)
+        .gte("date_menage", wideStart)
+        .lte("date_menage", wideEnd);
       return data ?? [];
     },
   });
