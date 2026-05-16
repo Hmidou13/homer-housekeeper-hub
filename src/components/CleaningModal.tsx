@@ -68,17 +68,31 @@ export function CleaningModal({ cleaningId, onClose }: { cleaningId: string; onC
       cleaning_id: cleaningId,
       contractor_id: null as any,
       ordre: maxOrdre + 1,
+      date_intervention: (c as any).date_menage,
     });
     refetchCleaning();
+  }
+
+  function normalizePhoneFr(raw: string | null | undefined): string {
+    if (!raw) return "";
+    let digits = raw.replace(/[^\d+]/g, "");
+    digits = digits.replace(/^\+/, "");
+    if (digits.startsWith("0")) digits = "33" + digits.slice(1);
+    return digits;
   }
 
   function copyMessageFor(message: string, prenom: string) {
     navigator.clipboard.writeText(message);
     toast.success(`Message pour ${prenom} copié`);
   }
-  function openWaFor(message: string, tel: string) {
+  function openWaFor(message: string, telRaw: string) {
+    const tel = normalizePhoneFr(telRaw);
+    if (!tel) {
+      toast.error("Numéro de téléphone invalide");
+      return;
+    }
     const url = `https://wa.me/${tel}?text=${encodeURIComponent(message)}`;
-    window.open(url, "_blank");
+    window.open(url, "_blank", "noopener,noreferrer");
   }
 
   const sortedCcs = [...ccs].sort((a, b) => (a.ordre ?? 0) - (b.ordre ?? 0));
@@ -105,10 +119,10 @@ export function CleaningModal({ cleaningId, onClose }: { cleaningId: string; onC
             ) : (
               <div className="space-y-2">
                 {sortedCcs.map((cc: any) => (
-                  <div key={cc.id} className="flex items-center gap-2">
+                  <div key={cc.id} className="flex items-center gap-2 flex-wrap">
                     <span className="text-xs text-muted-foreground w-12 shrink-0">Éq.{cc.ordre}</span>
                     <select
-                      className="border rounded px-2 py-1 bg-background text-sm flex-1 min-w-0"
+                      className="border rounded px-2 py-1 bg-background text-sm flex-1 min-w-[140px]"
                       value={cc.contractor_id ?? ""}
                       onChange={(e) => updateCc(cc.id, { contractor_id: e.target.value || null })}
                     >
@@ -117,6 +131,14 @@ export function CleaningModal({ cleaningId, onClose }: { cleaningId: string; onC
                         <option key={co.id} value={co.id}>{co.nom}</option>
                       ))}
                     </select>
+                    <Input
+                      type="date"
+                      className="h-8 text-sm"
+                      style={{ minWidth: "140px" }}
+                      value={cc.date_intervention ?? (c as any).date_menage}
+                      onChange={(e) => updateCc(cc.id, { date_intervention: e.target.value || null })}
+                      title="Date d'intervention de cette équipe"
+                    />
                     <Input
                       type="time"
                       className="h-8 w-24 text-sm"
@@ -176,8 +198,9 @@ export function CleaningModal({ cleaningId, onClose }: { cleaningId: string; onC
                   .map((cc: any) => {
                     const message = composeMessage(c, p, cc);
                     const prenom = cc.contractor?.nom?.split(" ")[0] ?? "";
-                    const tel = (cc.contractor?.telephone ?? "").replace(/[^\d]/g, "");
-                    const hasTel = tel.length > 0;
+                    const telRaw = cc.contractor?.telephone ?? "";
+                    const telNormalized = normalizePhoneFr(telRaw);
+                    const hasTel = telNormalized.length >= 11;
                     return (
                       <div key={cc.id} className="border rounded p-3 space-y-2">
                         <div className="text-xs font-semibold text-primary">
@@ -189,7 +212,7 @@ export function CleaningModal({ cleaningId, onClose }: { cleaningId: string; onC
                             <Copy className="h-3 w-3 mr-1" /> Copier
                           </Button>
                           {hasTel ? (
-                            <Button size="sm" onClick={() => openWaFor(message, tel)}>
+                            <Button size="sm" onClick={() => openWaFor(message, telRaw)}>
                               <MessageCircle className="h-3 w-3 mr-1" /> Ouvrir WhatsApp {prenom}
                             </Button>
                           ) : (
@@ -213,7 +236,7 @@ export function CleaningModal({ cleaningId, onClose }: { cleaningId: string; onC
 function composeMessage(c: any, p: any, cc: any): string {
   const contractor = cc?.contractor;
   const prenom = contractor?.nom?.split(" ")[0] ?? "";
-  const date = formatFrDate(c.date_menage);
+  const date = formatFrDate(cc?.date_intervention ?? c.date_menage);
   const typeLabel = c.type_menage === "proprietaire" ? "Propriétaire" : "Voyageur";
   const lienGps = p?.lien_gps || genGpsLink(p?.adresse_complete) || "";
   const arr = cc?.heure_arrivee;

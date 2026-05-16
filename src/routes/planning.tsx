@@ -80,7 +80,7 @@ function PlanningPage() {
         .from("cleanings")
         .select(`id, date_menage, type_menage, statut, cas_serre, observation, notes_homer, nb_adultes_voyageurs, equipe_avantio_info, avantio_reservation_no, heure_certification,
           property:property_id(id, nom, client, adresse_complete, code_porte, code_alarme, wifi, particularites, proprietaire_telephone),
-          ccs:cleaning_contractors(id, ordre, contractor_id, heure_arrivee, heure_depart, contractor:contractor_id(id, nom, telephone))`)
+          ccs:cleaning_contractors(id, ordre, contractor_id, date_intervention, heure_arrivee, heure_depart, contractor:contractor_id(id, nom, telephone))`)
         .gte("date_menage", from)
         .lte("date_menage", to)
         .order("date_menage");
@@ -143,10 +143,17 @@ function PlanningPage() {
     });
   }, [interventions, equipeFilter]);
 
-  async function addEquipeToCleaning(cleaning_id: string, ordre: number) {
+  async function addEquipeToCleaning(cleaning_id: string, ordre: number, dateMenage: string) {
     await supabase.from("cleaning_contractors").insert({
-      cleaning_id, contractor_id: null as any, ordre,
+      cleaning_id, contractor_id: null as any, ordre, date_intervention: dateMenage,
     });
+    refetch();
+  }
+
+  async function updateDateIntervention(ccId: string, date: string) {
+    await supabase.from("cleaning_contractors")
+      .update({ date_intervention: date || null })
+      .eq("id", ccId);
     refetch();
   }
 
@@ -232,7 +239,7 @@ function PlanningPage() {
                     <td className="p-2"></td>
                     <td className="p-2" colSpan={3}>
                       <button
-                        onClick={() => addEquipeToCleaning(iv.cleaning_id, iv.ordre)}
+                        onClick={() => addEquipeToCleaning(iv.cleaning_id, iv.ordre, iv.date_menage)}
                         className="text-xs text-primary hover:underline"
                       >
                         + Ajouter une équipe
@@ -250,7 +257,21 @@ function PlanningPage() {
                   className={`hover:bg-muted/40 ${blockRowClass(iv, isNewGroup)}`}
                 >
                   <td className="p-2 whitespace-nowrap">
-                    {isNewGroup ? formatFrDate(iv.date_menage) : <span className="text-muted-foreground/40">↳</span>}
+                    {iv.cc ? (
+                      <div className="flex flex-col gap-0.5">
+                        {isNewGroup && (
+                          <span className="text-[10px] text-muted-foreground">Avantio : {formatFrDate(iv.date_menage)}</span>
+                        )}
+                        <input
+                          type="date"
+                          className="border rounded px-2 py-1 bg-background text-sm"
+                          value={iv.cc.date_intervention ?? iv.date_menage}
+                          onChange={(e) => updateDateIntervention(iv.cc.id, e.target.value)}
+                        />
+                      </div>
+                    ) : (
+                      <span>{formatFrDate(iv.date_menage)}</span>
+                    )}
                   </td>
                   <td className="p-2">
                     {isNewGroup ? (

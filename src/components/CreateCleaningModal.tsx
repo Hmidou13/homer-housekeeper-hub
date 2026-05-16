@@ -61,7 +61,7 @@ export function CreateCleaningModal({
       }).select("id").single();
       if (error) throw error;
       const ccsRows = form.eq
-        .map((id: string, idx: number) => id ? { cleaning_id: created.id, contractor_id: id, ordre: idx + 1 } : null)
+        .map((id: string, idx: number) => id ? { cleaning_id: created.id, contractor_id: id, ordre: idx + 1, date_intervention: form.date_menage } : null)
         .filter(Boolean) as any[];
       if (ccsRows.length) {
         const { error: e2 } = await supabase.from("cleaning_contractors").insert(ccsRows);
