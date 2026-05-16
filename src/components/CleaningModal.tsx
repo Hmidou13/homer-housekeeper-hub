@@ -48,7 +48,8 @@ export function CleaningModal({ cleaningId, onClose }: { cleaningId: string; onC
 
   async function saveNotes() {
     await supabase.from("cleanings").update({ notes_homer: notes }).eq("id", cleaningId);
-    toast.success("Notes enregistrées");
+    await qc.invalidateQueries({ queryKey: ["cleaning", cleaningId] });
+    toast.success("Consignes enregistrées");
   }
 
   async function updateCc(ccId: string, patch: any) {
@@ -168,14 +169,15 @@ export function CleaningModal({ cleaningId, onClose }: { cleaningId: string; onC
           </section>
 
           <section>
-            <div className="text-xs uppercase text-muted-foreground mb-1">Notes Homer</div>
+            <div className="text-xs uppercase text-muted-foreground mb-1">Consignes ménage</div>
             <textarea
               className="w-full border rounded p-2 bg-background"
               rows={3}
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
+              placeholder="Instructions pour l'équipe : matériel à apporter, demandes du client, points d'attention..."
             />
-            <Button size="sm" className="mt-2" onClick={saveNotes}>Enregistrer notes</Button>
+            <Button size="sm" className="mt-2" onClick={saveNotes}>Enregistrer les consignes</Button>
           </section>
 
           {(() => {
@@ -242,6 +244,8 @@ function composeMessage(c: any, p: any, cc: any): string {
   const arr = cc?.heure_arrivee;
   const dep = cc?.heure_depart;
   const horaire = (arr && dep) ? `${arr} → ${dep}` : "à confirmer";
+  const consignes = (c.notes_homer ?? "").trim();
+  const observation = (c.observation ?? "").trim();
   return [
     `Bonjour ${prenom},`,
     `Le ${date} : ménage ${p?.nom ?? ""}`,
@@ -254,6 +258,8 @@ function composeMessage(c: any, p: any, cc: any): string {
     `Adultes prévus : ${c.nb_adultes_voyageurs ?? "—"}`,
     `Horaire prévu : ${horaire}`,
     `Particularités : ${p?.particularites || "RAS"}`,
+    consignes ? `📋 Consignes : ${consignes}` : "",
+    observation ? `Observation Avantio : ${observation}` : "",
     `Merci de me confirmer ton arrivée et ton départ.`,
   ].filter(Boolean).join("\n");
 }
