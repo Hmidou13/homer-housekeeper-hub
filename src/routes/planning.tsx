@@ -239,7 +239,7 @@ function PlanningPage() {
                     <td className="p-2"></td>
                     <td className="p-2" colSpan={3}>
                       <button
-                        onClick={() => addEquipeToCleaning(iv.cleaning_id, iv.ordre)}
+                        onClick={() => addEquipeToCleaning(iv.cleaning_id, iv.ordre, iv.date_menage)}
                         className="text-xs text-primary hover:underline"
                       >
                         + Ajouter une équipe
