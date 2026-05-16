@@ -109,13 +109,26 @@ function RapportPage() {
     return [...set].sort();
   }, [cleanings]);
 
-  const cleaningsFiltered = cleanings.filter((c: any) => {
+  // Helpers
+  const inMonth = (d: string | null | undefined) => !!d && d >= monthStart && d <= monthEnd;
+  const effDate = (cc: any, c: any) => cc?.date_intervention ?? c.date_menage;
+
+  // Filtre vue/client appliqué au niveau ménage (inchangé)
+  const passesFilter = (c: any) => {
     if (vueFilter === "voyageur" && c.type_menage !== "voyageur" && c.type_menage !== "a_verifier") return false;
     if (vueFilter === "proprietaire" && c.type_menage !== "proprietaire") return false;
     const clientVal = c.property?.client ?? null;
     if (clientFilter === "homer" && clientVal) return false;
     if (clientFilter !== "tous" && clientFilter !== "homer" && clientVal !== clientFilter) return false;
     return true;
+  };
+
+  // Ménages "dans le mois" = au moins une intervention dans le mois, ou pas d'équipe et date_menage dans le mois.
+  const cleaningsFiltered = cleanings.filter((c: any) => {
+    if (!passesFilter(c)) return false;
+    const ccs = c.ccs ?? [];
+    if (ccs.length === 0) return inMonth(c.date_menage);
+    return ccs.some((cc: any) => inMonth(effDate(cc, c)));
   });
 
   const overall = {
@@ -126,11 +139,14 @@ function RapportPage() {
     pretes: cleaningsFiltered.filter((c: any) => c.statut === "prete").length,
   };
 
+  // Agrégations basées sur les interventions dont la date_intervention tombe dans le mois.
   const byContractorClient = new Map<string, Stat>();
   cleaningsFiltered.forEach((c: any) => {
     if (c.statut === "annule") return;
     const clientLabel = c.property?.client ?? "Homer";
-    c.ccs?.forEach((cc: any) => {
+    (c.ccs ?? []).forEach((cc: any) => {
+      const d = effDate(cc, c);
+      if (!inMonth(d)) return;
       const contractor = contractors.find((co: any) => co.id === cc.contractor_id);
       if (!contractor) return;
       const key = `${cc.contractor_id}|${clientLabel}`;
@@ -154,7 +170,7 @@ function RapportPage() {
       s.heures += h;
       s.rows.push({
         id: c.id,
-        date: c.date_menage,
+        date: d,
         property_nom: c.property?.nom ?? "—",
         type_menage: c.type_menage,
         heures: h,
@@ -166,33 +182,56 @@ function RapportPage() {
     .filter((s) => s.nb.size > 0)
     .sort((a, b) => a.contractor_nom.localeCompare(b.contractor_nom) || a.client.localeCompare(b.client));
 
+  // Par maison : on regroupe par ménage (id) parmi ceux qui ont au moins 1 intervention dans le mois.
+  // Heures/coût = somme des interventions du mois uniquement.
   const byProp = new Map<string, PropStat>();
+  const propSeenIds = new Map<string, Set<string>>(); // nom -> set of cleaning ids déjà comptés
   cleaningsFiltered.forEach((c: any) => {
     if (c.statut === "annule") return;
     const nom = c.property?.nom ?? "—";
+    const ccsInMonth = (c.ccs ?? []).filter((cc: any) => inMonth(effDate(cc, c)));
+    if (ccsInMonth.length === 0 && (c.ccs ?? []).length > 0) return;
     const s: PropStat = byProp.get(nom) ?? { nom, nb: 0, v: 0, p: 0, heures: 0, rows: [] };
-    s.nb++;
-    if (c.type_menage === "proprietaire") s.p++; else s.v++;
-    const heuresMenage = (c.ccs ?? []).reduce((acc: number, cc: any) => acc + hoursBetween(cc.heure_arrivee, cc.heure_depart), 0);
+    const seen = propSeenIds.get(nom) ?? new Set<string>();
+    if (!seen.has(c.id)) {
+      s.nb++;
+      if (c.type_menage === "proprietaire") s.p++; else s.v++;
+      seen.add(c.id);
+      propSeenIds.set(nom, seen);
+    }
+    const heuresMenage = ccsInMonth.reduce((acc: number, cc: any) => acc + hoursBetween(cc.heure_arrivee, cc.heure_depart), 0);
     s.heures += heuresMenage;
-    const equipe_noms = (c.ccs ?? []).map((cc: any) => cc.contractor?.nom).filter(Boolean).join(", ") || "—";
-    const cout = (c.ccs ?? []).reduce((acc: number, cc: any) => {
+    const equipe_noms = ccsInMonth.map((cc: any) => cc.contractor?.nom).filter(Boolean).join(", ") || "—";
+    const cout = ccsInMonth.reduce((acc: number, cc: any) => {
       const h = hoursBetween(cc.heure_arrivee, cc.heure_depart);
       return acc + h * (cc.contractor?.taux_horaire ?? 0);
     }, 0);
-    s.rows.push({ id: c.id, date: c.date_menage, type_menage: c.type_menage, equipe_noms, heures: heuresMenage, cout });
+    // Date affichée = première intervention dans le mois (ou date_menage si pas de cc)
+    const dateAff = ccsInMonth.length > 0
+      ? ccsInMonth.map((cc: any) => effDate(cc, c)).sort()[0]
+      : c.date_menage;
+    s.rows.push({ id: c.id, date: dateAff, type_menage: c.type_menage, equipe_noms, heures: heuresMenage, cout });
     byProp.set(nom, s);
   });
   const byPropList = [...byProp.values()].sort((a,b) => b.nb - a.nb);
 
+  // Par client : même logique (compter chaque ménage 1 fois, heures/coûts au prorata des interventions du mois)
   const byClient = new Map<string, ClientStat>();
+  const clientSeenIds = new Map<string, Set<string>>();
   cleaningsFiltered.forEach((c: any) => {
     if (c.statut === "annule") return;
     const clientLabel = c.property?.client ?? "Homer";
+    const ccsInMonth = (c.ccs ?? []).filter((cc: any) => inMonth(effDate(cc, c)));
+    if (ccsInMonth.length === 0 && (c.ccs ?? []).length > 0) return;
     const s: ClientStat = byClient.get(clientLabel) ?? { client: clientLabel, nb: 0, v: 0, p: 0, heures: 0, cout: 0 };
-    s.nb++;
-    if (c.type_menage === "proprietaire") s.p++; else s.v++;
-    (c.ccs ?? []).forEach((cc: any) => {
+    const seen = clientSeenIds.get(clientLabel) ?? new Set<string>();
+    if (!seen.has(c.id)) {
+      s.nb++;
+      if (c.type_menage === "proprietaire") s.p++; else s.v++;
+      seen.add(c.id);
+      clientSeenIds.set(clientLabel, seen);
+    }
+    ccsInMonth.forEach((cc: any) => {
       const h = hoursBetween(cc.heure_arrivee, cc.heure_depart);
       s.heures += h;
       s.cout += h * (cc.contractor?.taux_horaire ?? 0);
