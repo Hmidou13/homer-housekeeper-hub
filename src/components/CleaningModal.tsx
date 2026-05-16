@@ -198,8 +198,9 @@ export function CleaningModal({ cleaningId, onClose }: { cleaningId: string; onC
                   .map((cc: any) => {
                     const message = composeMessage(c, p, cc);
                     const prenom = cc.contractor?.nom?.split(" ")[0] ?? "";
-                    const tel = (cc.contractor?.telephone ?? "").replace(/[^\d]/g, "");
-                    const hasTel = tel.length > 0;
+                    const telRaw = cc.contractor?.telephone ?? "";
+                    const telNormalized = normalizePhoneFr(telRaw);
+                    const hasTel = telNormalized.length >= 11;
                     return (
                       <div key={cc.id} className="border rounded p-3 space-y-2">
                         <div className="text-xs font-semibold text-primary">
@@ -211,7 +212,7 @@ export function CleaningModal({ cleaningId, onClose }: { cleaningId: string; onC
                             <Copy className="h-3 w-3 mr-1" /> Copier
                           </Button>
                           {hasTel ? (
-                            <Button size="sm" onClick={() => openWaFor(message, tel)}>
+                            <Button size="sm" onClick={() => openWaFor(message, telRaw)}>
                               <MessageCircle className="h-3 w-3 mr-1" /> Ouvrir WhatsApp {prenom}
                             </Button>
                           ) : (
