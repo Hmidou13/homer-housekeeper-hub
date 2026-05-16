@@ -329,13 +329,18 @@ function RapportPage() {
       .sort((a: any, b: any) => a.date_menage.localeCompare(b.date_menage))
       .forEach((c: any) => {
         const clientLabel = c.property?.client ?? "Homer";
-        const equipes = (c.ccs ?? []).map((cc: any) => cc.contractor?.nom).filter(Boolean).join(", ") || "—";
-        const heures = (c.ccs ?? []).reduce((acc: number, cc: any) => acc + hoursBetween(cc.heure_arrivee, cc.heure_depart), 0);
-        const cout = (c.ccs ?? []).reduce((acc: number, cc: any) => {
+        const ccsInMonth = (c.ccs ?? []).filter((cc: any) => inMonth(effDate(cc, c)));
+        if (ccsInMonth.length === 0 && (c.ccs ?? []).length > 0) return;
+        const equipes = ccsInMonth.map((cc: any) => cc.contractor?.nom).filter(Boolean).join(", ") || "—";
+        const heures = ccsInMonth.reduce((acc: number, cc: any) => acc + hoursBetween(cc.heure_arrivee, cc.heure_depart), 0);
+        const cout = ccsInMonth.reduce((acc: number, cc: any) => {
           const h = hoursBetween(cc.heure_arrivee, cc.heure_depart);
           return acc + h * (cc.contractor?.taux_horaire ?? 0);
         }, 0);
-        rows.push([clientLabel, formatFrDate(c.date_menage), c.property?.nom ?? "—", c.type_menage, equipes, heures.toFixed(2), cout.toFixed(2)]);
+        const dateAff = ccsInMonth.length > 0
+          ? ccsInMonth.map((cc: any) => effDate(cc, c)).sort()[0]
+          : c.date_menage;
+        rows.push([clientLabel, formatFrDate(dateAff), c.property?.nom ?? "—", c.type_menage, equipes, heures.toFixed(2), cout.toFixed(2)]);
       });
     downloadCsv(`Homer_Detail_Clients_${monthLabel}.csv`, rows);
   }
