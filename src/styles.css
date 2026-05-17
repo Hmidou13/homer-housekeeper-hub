@@ -53,13 +53,13 @@
   --card-foreground: oklch(0.22 0.04 250);
   --popover: oklch(1 0 0);
   --popover-foreground: oklch(0.22 0.04 250);
-  --primary: oklch(0.36 0.07 250);            /* #1B4F72 navy */
-  --primary-foreground: oklch(0.98 0.01 250);
+  --primary: #bb6f58;                          /* Terracotta Homer */
+  --primary-foreground: oklch(0.99 0.01 60);
   --secondary: oklch(0.96 0.01 250);
   --secondary-foreground: oklch(0.30 0.05 250);
   --muted: oklch(0.96 0.005 250);
   --muted-foreground: oklch(0.50 0.02 250);
-  --accent: oklch(0.58 0.16 38);               /* #C0533A terracotta */
+  --accent: #bb6f58;
   --accent-foreground: oklch(0.99 0.01 60);
   --destructive: oklch(0.55 0.22 25);
   --destructive-foreground: oklch(0.98 0.01 0);
@@ -67,13 +67,13 @@
   --warning: oklch(0.72 0.18 60);
   --border: oklch(0.91 0.01 250);
   --input: oklch(0.91 0.01 250);
-  --ring: oklch(0.36 0.07 250);
+  --ring: #bb6f58;
 
-  --sidebar: oklch(0.36 0.07 250);
-  --sidebar-foreground: oklch(0.97 0.01 250);
-  --sidebar-accent: oklch(0.30 0.06 250);
-  --sidebar-accent-foreground: oklch(0.99 0.01 250);
-  --sidebar-border: oklch(0.30 0.06 250);
+  --sidebar: oklch(0.985 0.003 60);                /* blanc cassé chaud */
+  --sidebar-foreground: oklch(0.30 0.02 60);       /* texte gris foncé */
+  --sidebar-accent: #bb6f58;                       /* terracotta : item actif */
+  --sidebar-accent-foreground: oklch(0.99 0.01 60);/* texte blanc sur item actif */
+  --sidebar-border: oklch(0.91 0.01 60);           /* bordure claire */
 
   --row-running: oklch(0.97 0.025 240);     /* #EBF5FB */
   --row-ready: oklch(0.95 0.06 150);        /* #D5F5E3 */
@@ -82,7 +82,7 @@
   --type-blocked: oklch(0.94 0.04 310);     /* #F4ECF7 */
   --type-verify: oklch(0.92 0.07 50);       /* #FAE5D3 */
 
-  --chart-1: oklch(0.36 0.07 250);
+  --chart-1: #bb6f58;
   --chart-2: oklch(0.58 0.16 38);
   --chart-3: oklch(0.65 0.16 145);
   --chart-4: oklch(0.72 0.18 60);
