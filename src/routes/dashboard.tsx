@@ -31,7 +31,7 @@ function DashboardPage() {
     queryFn: async () => {
       const { data } = await supabase
         .from("cleaning_contractors")
-        .select("contractor_id, cleaning:cleaning_id(date_menage, statut), contractor:contractor_id(nom)")
+        .select("cleaning_id, contractor_id, cleaning:cleaning_id(date_menage, statut), contractor:contractor_id(nom)")
         .gte("cleaning.date_menage", today)
         .lte("cleaning.date_menage", in7);
       return data ?? [];
