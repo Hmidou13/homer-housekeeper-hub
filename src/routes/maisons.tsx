@@ -208,6 +208,24 @@ function PropertyModal({ id, onClose }: { id: string; onClose: () => void }) {
             </div>
           </section>
           <section className="grid grid-cols-2 gap-3">
+            {isManuelle ? (
+              <div className="col-span-2">
+                <label className="text-xs text-muted-foreground">Nom de la maison</label>
+                <Input
+                  value={form.nom ?? ""}
+                  onChange={(e) => setForm({ ...form, nom: e.target.value })}
+                />
+                <p className="text-[11px] text-muted-foreground mt-1">
+                  Maison créée manuellement — le nom est modifiable.
+                </p>
+              </div>
+            ) : (
+              <div className="col-span-2">
+                <p className="text-[11px] text-muted-foreground">
+                  Maison synchronisée Avantio — le nom n'est pas modifiable.
+                </p>
+              </div>
+            )}
             <Field label="Localité" value={form.localite} onChange={(v) => setForm({ ...form, localite: v })} />
             <Field label="Client" value={form.client} onChange={(v) => setForm({ ...form, client: v })} />
             <div className="col-span-2">
