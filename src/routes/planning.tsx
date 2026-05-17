@@ -313,7 +313,12 @@ function PlanningPage() {
                   </td>
                   <td className="p-2 text-right">
                     {isNewGroup && (
-                      <Button size="sm" variant="ghost" onClick={() => setOpenId(iv.cleaning_id)}>⋯</Button>
+                      <div className="flex items-center justify-end gap-1">
+                        <Button size="sm" variant="ghost" onClick={() => setEditCleaningId(iv.cleaning_id)} title="Modifier le ménage">
+                          <Pencil className="h-3 w-3" />
+                        </Button>
+                        <Button size="sm" variant="ghost" onClick={() => setOpenId(iv.cleaning_id)}>⋯</Button>
+                      </div>
                     )}
                   </td>
                 </tr>
