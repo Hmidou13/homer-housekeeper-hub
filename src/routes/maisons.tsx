@@ -127,8 +127,40 @@ function PropertyModal({ id, onClose }: { id: string; onClose: () => void }) {
   const [form, setForm] = useState<any>(null);
   if (property && !form) setForm(property);
 
+  async function deleteProperty() {
+    const { count, error: countError } = await supabase
+      .from("cleanings")
+      .select("id", { count: "exact", head: true })
+      .eq("property_id", id);
+
+    if (countError) {
+      toast.error("Erreur lors de la vérification : " + countError.message);
+      return;
+    }
+
+    if ((count ?? 0) > 0) {
+      toast.error(
+        `Impossible de supprimer : cette maison a ${count} ménage(s) associé(s). Supprimez d'abord ces ménages dans le Planning.`
+      );
+      return;
+    }
+
+    const ok = window.confirm(
+      `Supprimer définitivement la maison "${form.nom}" ? Cette action est irréversible.`
+    );
+    if (!ok) return;
+
+    const { error } = await supabase.from("properties").delete().eq("id", id);
+    if (error) {
+      toast.error("Suppression impossible : " + error.message);
+    } else {
+      toast.success("Maison supprimée");
+      onClose();
+    }
+  }
+
   async function save() {
-    const { error } = await supabase.from("properties").update({
+    const updateData: any = {
       proprietaire_telephone: form.proprietaire_telephone,
       localite: form.localite,
       adresse_complete: form.adresse_complete,
@@ -144,7 +176,15 @@ function PropertyModal({ id, onClose }: { id: string; onClose: () => void }) {
       lien_drive_photos: form.lien_drive_photos,
       notes: form.notes,
       client: form.client?.trim() || null,
-    }).eq("id", id);
+    };
+    if (isManuelle) {
+      if (!form.nom?.trim()) {
+        toast.error("Le nom de la maison ne peut pas être vide");
+        return;
+      }
+      updateData.nom = form.nom.trim();
+    }
+    const { error } = await supabase.from("properties").update(updateData).eq("id", id);
     if (error) toast.error(error.message);
     else { toast.success("Enregistré"); onClose(); }
   }
