@@ -59,6 +59,7 @@ function PlanningPage() {
   const [search, setSearch] = useState(saved?.search ?? "");
   const [openId, setOpenId] = useState<string | null>(null);
   const [createOpen, setCreateOpen] = useState(false);
+  const [editCleaningId, setEditCleaningId] = useState<string | null>(null);
   const qc = useQueryClient();
 
   useMemo(() => {
