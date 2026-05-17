@@ -119,5 +119,5 @@ export function parseReservationsCsv(text: string): {
       source: "reservations",
     });
   }
-  return { rows: out, ignored, excluded };
+  return { rows: out, ignored, excluded, cancelled };
 }
