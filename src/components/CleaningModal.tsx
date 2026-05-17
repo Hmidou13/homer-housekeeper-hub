@@ -245,7 +245,6 @@ function composeMessage(c: any, p: any, cc: any): string {
   const dep = cc?.heure_depart;
   const horaire = (arr && dep) ? `${arr} → ${dep}` : "à confirmer";
   const consignes = (c.notes_homer ?? "").trim();
-  const observation = (c.observation ?? "").trim();
   return [
     `Bonjour ${prenom},`,
     `Le ${date} : ménage ${p?.nom ?? ""}`,
