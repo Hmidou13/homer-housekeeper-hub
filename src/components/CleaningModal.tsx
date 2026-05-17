@@ -258,7 +258,6 @@ function composeMessage(c: any, p: any, cc: any): string {
     `Horaire prévu : ${horaire}`,
     `Particularités : ${p?.particularites || "RAS"}`,
     consignes ? `📋 Consignes : ${consignes}` : "",
-    observation ? `Observation Avantio : ${observation}` : "",
     `Merci de me confirmer ton arrivée et ton départ.`,
   ].filter(Boolean).join("\n");
 }
