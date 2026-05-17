@@ -68,11 +68,17 @@ export function parseMenagesCsv(text: string): { rows: ParsedCleaning[]; exclude
 
 export type ParsedReservation = ParsedCleaning;
 
-export function parseReservationsCsv(text: string): { rows: ParsedReservation[]; ignored: number; excluded: number } {
+export function parseReservationsCsv(text: string): {
+  rows: ParsedReservation[];
+  ignored: number;
+  excluded: number;
+  cancelled: { avantio_reservation_no: string; property_name: string }[];
+} {
   const lines = text.split(/\r?\n/);
   const out: ParsedReservation[] = [];
   let ignored = 0;
   let excluded = 0;
+  const cancelled: { avantio_reservation_no: string; property_name: string }[] = [];
   for (const raw of lines) {
     if (!raw || !raw.trim()) continue;
     if (raw.startsWith("Liste réservation")) continue;
