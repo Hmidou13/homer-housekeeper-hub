@@ -126,13 +126,19 @@ function DashboardPage() {
       </section>
 
       <section className="bg-card rounded-lg border p-5">
-        <h2 className="text-sm font-semibold mb-3 text-primary">Ménages en cours</h2>
-        {enCours.length === 0 ? (
-          <p className="text-sm text-muted-foreground">Tout est calme ✓</p>
+        <h2 className="text-sm font-semibold mb-3 text-primary">À ne pas oublier</h2>
+        {rappels.length === 0 ? (
+          <p className="text-sm text-muted-foreground">Aucun point à suivre ✓</p>
         ) : (
-          <ul className="space-y-1.5 text-sm">
-            {enCours.map((c: any) => (
-              <li key={c.id}>{c.property?.nom}</li>
+          <ul className="space-y-2 text-sm">
+            {rappels.map((c: any) => (
+              <li key={c.id} className="flex flex-wrap items-baseline gap-2 border-b last:border-0 pb-2 last:pb-0">
+                <span className="text-xs font-semibold tabular-nums text-muted-foreground whitespace-nowrap">
+                  {formatFrDate(c.date_menage)}
+                </span>
+                <span className="font-medium">{c.property?.nom}</span>
+                <span className="text-muted-foreground">{c.observation}</span>
+              </li>
             ))}
           </ul>
         )}
