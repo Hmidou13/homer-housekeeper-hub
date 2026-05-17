@@ -2,7 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { RequireAuth } from "@/components/RequireAuth";
 import { supabase } from "@/integrations/supabase/client";
-import { hoursBetween } from "@/lib/time-utils";
+import { formatFrDate } from "@/lib/time-utils";
 
 export const Route = createFileRoute("/dashboard")({ component: () => <RequireAuth><DashboardPage /></RequireAuth> });
 
