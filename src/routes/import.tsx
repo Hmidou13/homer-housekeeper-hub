@@ -74,9 +74,11 @@ function ImportPage() {
         title='Rapport "Liste réservation"'
         description="Génère les séjours propriétaire et les blocages à arbitrer."
         accept=".csv"
-        onParsed={(text) => {
-          const { rows, ignored, excluded } = parseReservationsCsv(text);
+        onParsed={async (text) => {
+          const { rows, ignored, excluded, cancelled } = parseReservationsCsv(text);
           setR({ rows, ignored, excluded });
+          const detected = await detectCancellations(cancelled);
+          setCancellations(detected);
         }}
         preview={r}
         confirmLabel={`Importer ${r?.rows.length ?? 0} ligne(s) (${r?.ignored ?? 0} ignorée(s))`}
@@ -91,6 +93,47 @@ function ImportPage() {
         busy={busy}
         onCreateProperty={onCreate}
       />
+
+      {cancellations.length > 0 && (
+        <div className="border border-destructive/40 rounded-lg p-4 bg-destructive/5 space-y-3">
+          <div className="font-semibold text-destructive">
+            ⚠️ {cancellations.length} réservation(s) annulée(s) détectée(s)
+          </div>
+          <p className="text-xs text-muted-foreground">
+            Ces ménages existent dans Homer et sont annulés côté Avantio. Confirmez pour les passer en statut "Annulé".
+          </p>
+          <ul className="space-y-2 text-sm">
+            {cancellations.map((c) => (
+              <li key={c.cleaning_id} className="flex flex-col gap-0.5 border-b border-destructive/20 pb-2 last:border-0">
+                <div className="flex gap-2">
+                  <span className="text-muted-foreground tabular-nums">{formatFrDate(c.date_menage)}</span>
+                  <span className="font-medium">{c.property_name}</span>
+                </div>
+                {c.has_equipe && (
+                  <span className="text-xs text-destructive">
+                    ⚠️ Équipe affectée : {c.equipe_noms.join(", ")} — pense à prévenir
+                  </span>
+                )}
+              </li>
+            ))}
+          </ul>
+          <Button
+            variant="destructive"
+            size="sm"
+            onClick={async () => {
+              try {
+                const n = await applyCancellations(cancellations.map((c) => c.cleaning_id));
+                toast.success(`${n} ménage(s) annulé(s)`);
+                setCancellations([]);
+              } catch (e: any) {
+                toast.error(e?.message ?? "Erreur lors de l'annulation");
+              }
+            }}
+          >
+            Confirmer les annulations
+          </Button>
+        </div>
+      )}
 
       {createPropertyData && (
         <CreatePropertyModal
