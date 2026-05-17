@@ -280,9 +280,13 @@ function PropertyModal({ id, onClose }: { id: string; onClose: () => void }) {
               <textarea className="w-full border rounded px-2 py-1.5 bg-background" rows={2} value={form.notes ?? ""} onChange={(e) => setForm({ ...form, notes: e.target.value })} />
             </div>
           </section>
-          <div className="flex gap-2">
+          <div className="flex gap-2 items-center">
             <Button onClick={save}>Enregistrer</Button>
             <Button variant="outline" onClick={() => setScheduleOpen(true)}>+ Programmer un ménage</Button>
+            <div className="flex-1" />
+            <Button variant="destructive" onClick={deleteProperty}>
+              Supprimer la maison
+            </Button>
           </div>
         </div>
         {scheduleOpen && <CreateCleaningModal lockedPropertyId={id} onClose={() => setScheduleOpen(false)} />}
