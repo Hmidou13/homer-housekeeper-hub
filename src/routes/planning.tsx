@@ -339,6 +339,12 @@ function PlanningPage() {
           onClose={(created) => { setCreateOpen(false); if (created) refetch(); }}
         />
       )}
+      {editCleaningId && (
+        <CreateCleaningModal
+          editCleaningId={editCleaningId}
+          onClose={(saved) => { setEditCleaningId(null); if (saved) refetch(); }}
+        />
+      )}
     </div>
   );
 }
