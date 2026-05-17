@@ -126,6 +126,7 @@ function PropertyModal({ id, onClose }: { id: string; onClose: () => void }) {
   });
   const [form, setForm] = useState<any>(null);
   if (property && !form) setForm(property);
+  const isManuelle = (form?.avantio_code ?? "").startsWith("HOMER-");
 
   async function deleteProperty() {
     const { count, error: countError } = await supabase
