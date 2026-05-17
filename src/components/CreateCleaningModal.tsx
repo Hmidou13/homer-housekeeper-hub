@@ -9,10 +9,13 @@ import { toast } from "sonner";
 export function CreateCleaningModal({
   onClose,
   lockedPropertyId,
+  editCleaningId,
 }: {
-  onClose: (created?: boolean) => void;
+  onClose: (saved?: boolean) => void;
   lockedPropertyId?: string;
+  editCleaningId?: string;
 }) {
+  const isEdit = !!editCleaningId;
   const today = new Date().toISOString().slice(0, 10);
   const [form, setForm] = useState<any>({
     date_menage: today,
@@ -40,7 +43,42 @@ export function CreateCleaningModal({
     },
   });
 
-  useEffect(() => { if (lockedPropertyId) setForm((f: any) => ({ ...f, property_id: lockedPropertyId })); }, [lockedPropertyId]);
+  const { data: editData } = useQuery({
+    queryKey: ["edit-cleaning", editCleaningId],
+    queryFn: async () => {
+      if (!editCleaningId) return null;
+      const { data } = await supabase
+        .from("cleanings")
+        .select("id, date_menage, property_id, type_menage, cas_serre, nb_adultes_voyageurs, observation, ccs:cleaning_contractors(contractor_id, ordre)")
+        .eq("id", editCleaningId)
+        .single();
+      return data;
+    },
+    enabled: !!editCleaningId,
+  });
+
+  useEffect(() => { if (lockedPropertyId && !isEdit) setForm((f: any) => ({ ...f, property_id: lockedPropertyId })); }, [lockedPropertyId, isEdit]);
+
+  useEffect(() => {
+    if (editData) {
+      const eq = ["", "", "", ""];
+      ((editData as any).ccs ?? [])
+        .slice()
+        .sort((a: any, b: any) => (a.ordre ?? 0) - (b.ordre ?? 0))
+        .forEach((cc: any, idx: number) => {
+          if (idx < 4) eq[idx] = cc.contractor_id ?? "";
+        });
+      setForm({
+        date_menage: (editData as any).date_menage,
+        property_id: (editData as any).property_id,
+        type_menage: (editData as any).type_menage,
+        eq,
+        cas_serre: !!(editData as any).cas_serre,
+        nb_adultes_voyageurs: (editData as any).nb_adultes_voyageurs ?? "",
+        observation: (editData as any).observation ?? "",
+      });
+    }
+  }, [editData]);
 
   async function save() {
     if (!form.date_menage || !form.property_id || !form.type_menage) {
@@ -49,26 +87,61 @@ export function CreateCleaningModal({
     }
     setSaving(true);
     try {
-      const { data: created, error } = await supabase.from("cleanings").insert({
-        date_menage: form.date_menage,
-        property_id: form.property_id,
-        type_menage: form.type_menage,
-        statut: "planifie",
-        avantio_source: "manuel",
-        cas_serre: !!form.cas_serre,
-        nb_adultes_voyageurs: form.nb_adultes_voyageurs ? Number(form.nb_adultes_voyageurs) : null,
-        observation: form.observation?.trim() || null,
-      }).select("id").single();
-      if (error) throw error;
-      const ccsRows = form.eq
-        .map((id: string, idx: number) => id ? { cleaning_id: created.id, contractor_id: id, ordre: idx + 1, date_intervention: form.date_menage } : null)
-        .filter(Boolean) as any[];
-      if (ccsRows.length) {
-        const { error: e2 } = await supabase.from("cleaning_contractors").insert(ccsRows);
-        if (e2) throw e2;
+      if (isEdit) {
+        const { error } = await supabase.from("cleanings").update({
+          date_menage: form.date_menage,
+          property_id: form.property_id,
+          type_menage: form.type_menage,
+          cas_serre: !!form.cas_serre,
+          nb_adultes_voyageurs: form.nb_adultes_voyageurs ? Number(form.nb_adultes_voyageurs) : null,
+          observation: form.observation?.trim() || null,
+        }).eq("id", editCleaningId!);
+        if (error) throw error;
+
+        const { data: existingCcs } = await supabase
+          .from("cleaning_contractors")
+          .select("id, ordre, date_intervention")
+          .eq("cleaning_id", editCleaningId!);
+
+        for (let i = 0; i < 4; i++) {
+          const ordre = i + 1;
+          const contractorId = form.eq[i] || null;
+          const existing = (existingCcs ?? []).find((cc: any) => cc.ordre === ordre);
+          if (contractorId && existing) {
+            await supabase.from("cleaning_contractors")
+              .update({ contractor_id: contractorId })
+              .eq("id", existing.id);
+          } else if (contractorId && !existing) {
+            await supabase.from("cleaning_contractors")
+              .insert({ cleaning_id: editCleaningId!, contractor_id: contractorId, ordre, date_intervention: form.date_menage });
+          } else if (!contractorId && existing) {
+            await supabase.from("cleaning_contractors").delete().eq("id", existing.id);
+          }
+        }
+        toast.success("Ménage modifié");
+        onClose(true);
+      } else {
+        const { data: created, error } = await supabase.from("cleanings").insert({
+          date_menage: form.date_menage,
+          property_id: form.property_id,
+          type_menage: form.type_menage,
+          statut: "planifie",
+          avantio_source: "manuel",
+          cas_serre: !!form.cas_serre,
+          nb_adultes_voyageurs: form.nb_adultes_voyageurs ? Number(form.nb_adultes_voyageurs) : null,
+          observation: form.observation?.trim() || null,
+        }).select("id").single();
+        if (error) throw error;
+        const ccsRows = form.eq
+          .map((id: string, idx: number) => id ? { cleaning_id: created.id, contractor_id: id, ordre: idx + 1, date_intervention: form.date_menage } : null)
+          .filter(Boolean) as any[];
+        if (ccsRows.length) {
+          const { error: e2 } = await supabase.from("cleaning_contractors").insert(ccsRows);
+          if (e2) throw e2;
+        }
+        toast.success("Ménage créé");
+        onClose(true);
       }
-      toast.success("Ménage créé");
-      onClose(true);
     } catch (e: any) {
       toast.error(e.message ?? "Erreur");
     } finally {
@@ -79,7 +152,7 @@ export function CreateCleaningModal({
   return (
     <Dialog open onOpenChange={(o) => { if (!o) onClose(); }}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader><DialogTitle>Nouveau ménage</DialogTitle></DialogHeader>
+        <DialogHeader><DialogTitle>{isEdit ? "Modifier le ménage" : "Nouveau ménage"}</DialogTitle></DialogHeader>
         <div className="grid grid-cols-2 gap-3 text-sm">
           <div>
             <label className="text-xs text-muted-foreground">Date *</label>
@@ -128,11 +201,12 @@ export function CreateCleaningModal({
           <div className="col-span-2">
             <label className="text-xs text-muted-foreground">Observation</label>
             <textarea className="w-full border rounded px-2 py-1.5 bg-background" rows={2} value={form.observation} onChange={(e) => setForm({ ...form, observation: e.target.value })} />
+            <p className="text-xs text-muted-foreground mt-1 italic">Note interne au bureau — non transmise aux femmes de ménage.</p>
           </div>
         </div>
         <div className="flex justify-end gap-2 mt-4">
           <Button variant="outline" onClick={() => onClose()}>Annuler</Button>
-          <Button onClick={save} disabled={saving}>{saving ? "Création…" : "Créer"}</Button>
+          <Button onClick={save} disabled={saving}>{saving ? "Enregistrement…" : isEdit ? "Enregistrer" : "Créer"}</Button>
         </div>
       </DialogContent>
     </Dialog>
