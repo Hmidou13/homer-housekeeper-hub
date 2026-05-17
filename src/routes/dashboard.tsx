@@ -52,9 +52,6 @@ function DashboardPage() {
     bloque: cleanings.filter((c) => c.type_menage === "bloque_a_arbitrer").length,
   };
 
-  const cleaningIds = cleanings.map((c) => c.id);
-  const cleaningsWithEquipe = new Set(ccs.map((c: any) => c.cleaning?.date_menage ? c.contractor_id && (c as any).cleaning_id : null).filter(Boolean));
-  // Recompute properly with cleaning_id mapping
   const cleaningIdsWithCC = new Set<string>();
   ccs.forEach((c: any) => { if ((c as any).cleaning_id) cleaningIdsWithCC.add((c as any).cleaning_id); });
 
@@ -70,7 +67,19 @@ function DashboardPage() {
   });
   const charge = [...chargeMap.entries()].sort((a, b) => b[1] - a[1]);
 
-  const enCours = todayItems.filter((c) => c.statut === "en_cours");
+  const { data: rappels = [] } = useQuery({
+    queryKey: ["dashboard-rappels", today],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("cleanings")
+        .select("id, date_menage, observation, property:property_id(nom)")
+        .gte("date_menage", today)
+        .neq("statut", "annule")
+        .not("observation", "is", null)
+        .order("date_menage");
+      return (data ?? []).filter((c: any) => (c.observation ?? "").trim().length > 0);
+    },
+  });
 
   return (
     <div className="space-y-6 max-w-7xl">
