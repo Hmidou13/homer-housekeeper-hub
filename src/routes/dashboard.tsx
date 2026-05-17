@@ -98,9 +98,9 @@ function DashboardPage() {
         </Card>
         <Card title="Alertes">
           <Link to="/planning" className="block hover:bg-muted/50 rounded px-1">
-            <Row label="⚠️ Sans équipe" v={sansEquipe} />
+            <Row label="👤 Sans équipe" v={sansEquipe} />
           </Link>
-          <Row label="⚠️ Cas serrés" v={casSerres} />
+          <Row label="⏱️ Cas serrés" v={casSerres} />
           <Link to="/planning" className="block hover:bg-muted/50 rounded px-1">
             <Row label="🔒 À arbitrer" v={aArbitrer} />
           </Link>
