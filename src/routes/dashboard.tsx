@@ -2,7 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { RequireAuth } from "@/components/RequireAuth";
 import { supabase } from "@/integrations/supabase/client";
-import { hoursBetween } from "@/lib/time-utils";
+import { formatFrDate } from "@/lib/time-utils";
 
 export const Route = createFileRoute("/dashboard")({ component: () => <RequireAuth><DashboardPage /></RequireAuth> });
 
@@ -52,9 +52,6 @@ function DashboardPage() {
     bloque: cleanings.filter((c) => c.type_menage === "bloque_a_arbitrer").length,
   };
 
-  const cleaningIds = cleanings.map((c) => c.id);
-  const cleaningsWithEquipe = new Set(ccs.map((c: any) => c.cleaning?.date_menage ? c.contractor_id && (c as any).cleaning_id : null).filter(Boolean));
-  // Recompute properly with cleaning_id mapping
   const cleaningIdsWithCC = new Set<string>();
   ccs.forEach((c: any) => { if ((c as any).cleaning_id) cleaningIdsWithCC.add((c as any).cleaning_id); });
 
@@ -70,7 +67,19 @@ function DashboardPage() {
   });
   const charge = [...chargeMap.entries()].sort((a, b) => b[1] - a[1]);
 
-  const enCours = todayItems.filter((c) => c.statut === "en_cours");
+  const { data: rappels = [] } = useQuery({
+    queryKey: ["dashboard-rappels", today],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("cleanings")
+        .select("id, date_menage, observation, property:property_id(nom)")
+        .gte("date_menage", today)
+        .neq("statut", "annule")
+        .not("observation", "is", null)
+        .order("date_menage");
+      return (data ?? []).filter((c: any) => (c.observation ?? "").trim().length > 0);
+    },
+  });
 
   return (
     <div className="space-y-6 max-w-7xl">
@@ -117,13 +126,19 @@ function DashboardPage() {
       </section>
 
       <section className="bg-card rounded-lg border p-5">
-        <h2 className="text-sm font-semibold mb-3 text-primary">Ménages en cours</h2>
-        {enCours.length === 0 ? (
-          <p className="text-sm text-muted-foreground">Tout est calme ✓</p>
+        <h2 className="text-sm font-semibold mb-3 text-primary">À ne pas oublier</h2>
+        {rappels.length === 0 ? (
+          <p className="text-sm text-muted-foreground">Aucun point à suivre ✓</p>
         ) : (
-          <ul className="space-y-1.5 text-sm">
-            {enCours.map((c: any) => (
-              <li key={c.id}>{c.property?.nom}</li>
+          <ul className="space-y-2 text-sm">
+            {rappels.map((c: any) => (
+              <li key={c.id} className="flex flex-wrap items-baseline gap-2 border-b last:border-0 pb-2 last:pb-0">
+                <span className="text-xs font-semibold tabular-nums text-muted-foreground whitespace-nowrap">
+                  {formatFrDate(c.date_menage)}
+                </span>
+                <span className="font-medium">{c.property?.nom}</span>
+                <span className="text-muted-foreground">{c.observation}</span>
+              </li>
             ))}
           </ul>
         )}

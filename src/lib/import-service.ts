@@ -90,7 +90,6 @@ export async function importCleanings(rows: ParsedCleaning[]): Promise<ImportRes
             equipe_avantio_info: row.equipe_avantio_info,
             cas_serre: row.cas_serre,
             nb_adultes_voyageurs: row.nb_adultes_voyageurs,
-            observation: row.observation,
           })
           .eq("id", ex.id);
         if (!error) result.updated++;
