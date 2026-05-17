@@ -4,9 +4,17 @@ import { RequireAuth } from "@/components/RequireAuth";
 import { Button } from "@/components/ui/button";
 import { Upload } from "lucide-react";
 import { parseMenagesCsv, parseReservationsCsv, type ParsedCleaning } from "@/lib/csv-parsers";
-import { importCleanings, type ImportResult, type UnmatchedRow } from "@/lib/import-service";
+import {
+  importCleanings,
+  type ImportResult,
+  type UnmatchedRow,
+  detectCancellations,
+  applyCancellations,
+  type CancellationInfo,
+} from "@/lib/import-service";
 import { CreatePropertyModal } from "@/components/CreatePropertyModal";
 import { guessPropertyType } from "@/lib/utils";
+import { formatFrDate } from "@/lib/time-utils";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/import")({ component: () => <RequireAuth><ImportPage /></RequireAuth> });
@@ -23,12 +31,14 @@ function ImportPage() {
   const [r, setR] = useState<Preview | null>(null);
   const [busy, setBusy] = useState(false);
   const [createPropertyData, setCreatePropertyData] = useState<any | null>(null);
+  const [cancellations, setCancellations] = useState<CancellationInfo[]>([]);
 
   const onCreate = (u: UnmatchedRow) => setCreatePropertyData({
     nom: u.property_name,
     avantio_code: u.property_avantio_code ?? "",
     type: guessPropertyType(u.property_name),
   });
+
 
   return (
     <div className="space-y-6 max-w-5xl">
