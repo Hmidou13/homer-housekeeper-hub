@@ -68,11 +68,17 @@ export function parseMenagesCsv(text: string): { rows: ParsedCleaning[]; exclude
 
 export type ParsedReservation = ParsedCleaning;
 
-export function parseReservationsCsv(text: string): { rows: ParsedReservation[]; ignored: number; excluded: number } {
+export function parseReservationsCsv(text: string): {
+  rows: ParsedReservation[];
+  ignored: number;
+  excluded: number;
+  cancelled: { avantio_reservation_no: string; property_name: string }[];
+} {
   const lines = text.split(/\r?\n/);
   const out: ParsedReservation[] = [];
   let ignored = 0;
   let excluded = 0;
+  const cancelled: { avantio_reservation_no: string; property_name: string }[] = [];
   for (const raw of lines) {
     if (!raw || !raw.trim()) continue;
     if (raw.startsWith("Liste réservation")) continue;
@@ -85,6 +91,13 @@ export function parseReservationsCsv(text: string): { rows: ParsedReservation[];
     if (isExcluded(cols[3])) { excluded++; continue; }
 
     const typeRes = (cols[9] || "").trim();
+
+    // Détection des annulations : ne crée pas de ménage, signale au caller
+    if (typeRes === "Annulée") {
+      cancelled.push({ avantio_reservation_no: reservationNo, property_name: cols[3] });
+      continue;
+    }
+
     const dateSortie = parseFrDate(cols[11]);
     if (!dateSortie) continue;
 
@@ -106,5 +119,5 @@ export function parseReservationsCsv(text: string): { rows: ParsedReservation[];
       source: "reservations",
     });
   }
-  return { rows: out, ignored, excluded };
+  return { rows: out, ignored, excluded, cancelled };
 }

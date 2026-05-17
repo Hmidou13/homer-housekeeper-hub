@@ -13,6 +13,59 @@ export type ImportResult = {
   unmatched: UnmatchedRow[];
 };
 
+export type CancellationInfo = {
+  cleaning_id: string;
+  avantio_reservation_no: string;
+  property_name: string;
+  date_menage: string;
+  statut_actuel: string;
+  has_equipe: boolean;
+  equipe_noms: string[];
+};
+
+// Identifie les ménages à annuler (ne modifie rien — détection seule)
+export async function detectCancellations(
+  cancelled: { avantio_reservation_no: string; property_name: string }[],
+): Promise<CancellationInfo[]> {
+  if (cancelled.length === 0) return [];
+  const refs = cancelled.map((c) => c.avantio_reservation_no);
+
+  const { data: cleanings } = await supabase
+    .from("cleanings")
+    .select(
+      "id, avantio_reservation_no, date_menage, statut, property:property_id(nom), ccs:cleaning_contractors(contractor:contractor_id(nom))",
+    )
+    .in("avantio_reservation_no", refs)
+    .neq("statut", "annule");
+
+  return (cleanings ?? []).map((c: any) => {
+    const equipe_noms = (c.ccs ?? [])
+      .map((cc: any) => cc.contractor?.nom)
+      .filter(Boolean);
+    return {
+      cleaning_id: c.id,
+      avantio_reservation_no: c.avantio_reservation_no,
+      property_name: c.property?.nom ?? "—",
+      date_menage: c.date_menage,
+      statut_actuel: c.statut,
+      has_equipe: equipe_noms.length > 0,
+      equipe_noms,
+    };
+  });
+}
+
+// Applique les annulations confirmées par l'utilisateur
+export async function applyCancellations(cleaningIds: string[]): Promise<number> {
+  if (cleaningIds.length === 0) return 0;
+  const { error } = await supabase
+    .from("cleanings")
+    .update({ statut: "annule" })
+    .in("id", cleaningIds);
+  if (error) throw error;
+  return cleaningIds.length;
+}
+
+
 export async function importCleanings(rows: ParsedCleaning[]): Promise<ImportResult> {
   const result: ImportResult = { created: 0, updated: 0, skipped: 0, unmatched: [] };
   if (rows.length === 0) return result;
