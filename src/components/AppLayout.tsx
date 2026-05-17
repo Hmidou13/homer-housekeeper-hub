@@ -20,7 +20,7 @@ export function AppLayout({ children }: { children: ReactNode }) {
     <div className="flex min-h-screen w-full bg-background text-foreground">
       <aside className="w-60 shrink-0 bg-sidebar text-sidebar-foreground flex flex-col">
         <div className="h-14 flex items-center px-5 border-b border-sidebar-border">
-          <span className="font-semibold text-base tracking-tight">Homer Conciergerie</span>
+          <span className="font-semibold text-base tracking-tight text-primary">Homer Conciergerie</span>
         </div>
         <nav className="flex-1 px-2 py-4 space-y-1">
           {NAV.map(({ to, label, icon: Icon }) => {
