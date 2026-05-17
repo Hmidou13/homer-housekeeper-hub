@@ -91,6 +91,13 @@ export function parseReservationsCsv(text: string): {
     if (isExcluded(cols[3])) { excluded++; continue; }
 
     const typeRes = (cols[9] || "").trim();
+
+    // Détection des annulations : ne crée pas de ménage, signale au caller
+    if (typeRes === "Annulée") {
+      cancelled.push({ avantio_reservation_no: reservationNo, property_name: cols[3] });
+      continue;
+    }
+
     const dateSortie = parseFrDate(cols[11]);
     if (!dateSortie) continue;
 
