@@ -239,25 +239,50 @@ function composeMessage(c: any, p: any, cc: any): string {
   const contractor = cc?.contractor;
   const prenom = contractor?.nom?.split(" ")[0] ?? "";
   const date = formatFrDate(cc?.date_intervention ?? c.date_menage);
-  const typeLabel = c.type_menage === "proprietaire" ? "Propriétaire" : "Voyageur";
   const lienGps = p?.lien_gps || genGpsLink(p?.adresse_complete) || "";
   const arr = cc?.heure_arrivee;
   const dep = cc?.heure_depart;
   const horaire = (arr && dep) ? `${arr} → ${dep}` : "à confirmer";
   const consignes = (c.notes_homer ?? "").trim();
-  return [
+
+  // Champs d'accès : affichés seulement si renseignés
+  const codePorte = (p?.code_porte ?? "").trim();
+  const codeAlarme = (p?.code_alarme ?? "").trim();
+  const boiteACles = (p?.boite_a_cles ?? "").trim();
+  const wifi = (p?.wifi ?? "").trim();
+
+  // Bloc 1 : identité + date
+  const bloc1 = [
     `Bonjour ${prenom},`,
     `Le ${date} : ménage ${p?.nom ?? ""}`,
+  ];
+
+  // Bloc 2 : localisation
+  const bloc2 = [
     `Adresse : ${p?.adresse_complete ?? ""}`,
     lienGps ? `📍 GPS : ${lienGps}` : "",
-    `Code porte : ${p?.code_porte || "à venir"}`,
-    `Code alarme : ${p?.code_alarme || "à venir"}`,
-    `Wifi : ${p?.wifi || "à venir"}`,
-    `Type : ${typeLabel}`,
-    `Adultes prévus : ${c.nb_adultes_voyageurs ?? "—"}`,
+  ].filter(Boolean);
+
+  // Bloc 3 : accès (chaque ligne seulement si renseignée)
+  const bloc3 = [
+    codePorte ? `Code porte : ${codePorte}` : "",
+    codeAlarme ? `Code alarme : ${codeAlarme}` : "",
+    boiteACles ? `Boîte à clés : ${boiteACles}` : "",
+    wifi ? `Wifi : ${wifi}` : "",
+  ].filter(Boolean);
+
+  // Bloc 4 : détails du ménage
+  const bloc4 = [
     `Horaire prévu : ${horaire}`,
     `Particularités : ${p?.particularites || "RAS"}`,
     consignes ? `📋 Consignes : ${consignes}` : "",
-    `Merci de me confirmer ton arrivée et ton départ.`,
-  ].filter(Boolean).join("\n");
+  ].filter(Boolean);
+
+  const blocFin = [`Merci de me confirmer ton arrivée et ton départ.`];
+
+  // Assembler les blocs non vides, séparés par une ligne vide
+  return [bloc1, bloc2, bloc3, bloc4, blocFin]
+    .filter((bloc) => bloc.length > 0)
+    .map((bloc) => bloc.join("\n"))
+    .join("\n\n");
 }
