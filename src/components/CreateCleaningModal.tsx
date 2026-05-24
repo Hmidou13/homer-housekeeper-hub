@@ -241,10 +241,19 @@ export function CreateCleaningModal({
             <p className="text-xs text-muted-foreground mt-1 italic">Note interne au bureau — non transmise aux femmes de ménage.</p>
           </div>
         </div>
-        <div className="flex justify-end gap-2 mt-4">
-          <Button variant="outline" onClick={() => onClose()}>Annuler</Button>
+        <div className="flex gap-2 items-center mt-4">
           <Button onClick={save} disabled={saving}>{saving ? "Enregistrement…" : isEdit ? "Enregistrer" : "Créer"}</Button>
+          <Button variant="outline" onClick={() => onClose()} disabled={saving}>Annuler</Button>
+          {isEdit && (
+            <>
+              <div className="flex-1" />
+              <Button variant="destructive" onClick={deleteCleaning} disabled={saving}>
+                Supprimer ce ménage
+              </Button>
+            </>
+          )}
         </div>
+
       </DialogContent>
     </Dialog>
   );
