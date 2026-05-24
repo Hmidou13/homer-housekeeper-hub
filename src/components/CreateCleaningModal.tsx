@@ -149,6 +149,43 @@ export function CreateCleaningModal({
     }
   }
 
+  async function deleteCleaning() {
+    if (!editCleaningId) return;
+    const property = properties?.find((p: any) => p.id === form.property_id);
+    const nomMaison = property?.nom ?? "(maison inconnue)";
+    const dateFr = form.date_menage
+      ? new Date(form.date_menage).toLocaleDateString("fr-FR")
+      : "(date inconnue)";
+    const ok = window.confirm(
+      `Êtes-vous sûr de vouloir supprimer définitivement ce ménage ?\n\n` +
+      `Maison : ${nomMaison}\n` +
+      `Date : ${dateFr}\n\n` +
+      `Cette action est irréversible. Les équipes affectées seront également retirées.`
+    );
+    if (!ok) return;
+    setSaving(true);
+    try {
+      const { error: ccError } = await supabase
+        .from("cleaning_contractors")
+        .delete()
+        .eq("cleaning_id", editCleaningId);
+      if (ccError) throw ccError;
+      const { error: cError } = await supabase
+        .from("cleanings")
+        .delete()
+        .eq("id", editCleaningId);
+      if (cError) throw cError;
+      toast.success("Ménage supprimé");
+      onClose(true);
+    } catch (e: any) {
+      toast.error("Suppression impossible : " + (e.message ?? "Erreur inconnue"));
+    } finally {
+      setSaving(false);
+    }
+  }
+
+
+
   return (
     <Dialog open onOpenChange={(o) => { if (!o) onClose(); }}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
@@ -204,10 +241,19 @@ export function CreateCleaningModal({
             <p className="text-xs text-muted-foreground mt-1 italic">Note interne au bureau — non transmise aux femmes de ménage.</p>
           </div>
         </div>
-        <div className="flex justify-end gap-2 mt-4">
-          <Button variant="outline" onClick={() => onClose()}>Annuler</Button>
+        <div className="flex gap-2 items-center mt-4">
           <Button onClick={save} disabled={saving}>{saving ? "Enregistrement…" : isEdit ? "Enregistrer" : "Créer"}</Button>
+          <Button variant="outline" onClick={() => onClose()} disabled={saving}>Annuler</Button>
+          {isEdit && (
+            <>
+              <div className="flex-1" />
+              <Button variant="destructive" onClick={deleteCleaning} disabled={saving}>
+                Supprimer ce ménage
+              </Button>
+            </>
+          )}
         </div>
+
       </DialogContent>
     </Dialog>
   );
