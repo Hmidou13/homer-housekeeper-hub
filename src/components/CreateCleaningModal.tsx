@@ -149,6 +149,43 @@ export function CreateCleaningModal({
     }
   }
 
+  async function deleteCleaning() {
+    if (!editCleaningId) return;
+    const property = properties?.find((p: any) => p.id === form.property_id);
+    const nomMaison = property?.nom ?? "(maison inconnue)";
+    const dateFr = form.date_menage
+      ? new Date(form.date_menage).toLocaleDateString("fr-FR")
+      : "(date inconnue)";
+    const ok = window.confirm(
+      `Êtes-vous sûr de vouloir supprimer définitivement ce ménage ?\n\n` +
+      `Maison : ${nomMaison}\n` +
+      `Date : ${dateFr}\n\n` +
+      `Cette action est irréversible. Les équipes affectées seront également retirées.`
+    );
+    if (!ok) return;
+    setSaving(true);
+    try {
+      const { error: ccError } = await supabase
+        .from("cleaning_contractors")
+        .delete()
+        .eq("cleaning_id", editCleaningId);
+      if (ccError) throw ccError;
+      const { error: cError } = await supabase
+        .from("cleanings")
+        .delete()
+        .eq("id", editCleaningId);
+      if (cError) throw cError;
+      toast.success("Ménage supprimé");
+      onClose(true);
+    } catch (e: any) {
+      toast.error("Suppression impossible : " + (e.message ?? "Erreur inconnue"));
+    } finally {
+      setSaving(false);
+    }
+  }
+
+
+
   return (
     <Dialog open onOpenChange={(o) => { if (!o) onClose(); }}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
