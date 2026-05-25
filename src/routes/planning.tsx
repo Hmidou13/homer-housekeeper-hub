@@ -80,7 +80,7 @@ function PlanningPage() {
     queryFn: async () => {
       const { data } = await supabase
         .from("cleanings")
-        .select(`id, date_menage, type_menage, statut, cas_serre, observation, notes_homer, nb_adultes_voyageurs, equipe_avantio_info, avantio_reservation_no, heure_certification,
+        .select(`id, date_menage, type_menage, statut, cas_serre, observation, notes_homer, nb_adultes_voyageurs, equipe_avantio_info, avantio_reservation_no, heure_certification, validation_requise,
           property:property_id(id, nom, client, adresse_complete, code_porte, code_alarme, wifi, particularites, proprietaire_telephone),
           ccs:cleaning_contractors(id, ordre, contractor_id, date_intervention, heure_arrivee, heure_depart, contractor:contractor_id(id, nom, telephone))`)
         .gte("date_menage", from)
