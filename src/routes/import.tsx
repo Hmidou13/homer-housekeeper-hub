@@ -7,6 +7,7 @@ import { parseMenagesCsv, parseReservationsCsv, type ParsedCleaning } from "@/li
 import {
   importCleanings,
   importCleaningsForProperty,
+  refreshValidationFlags,
   type ImportResult,
   type UnmatchedRow,
   detectCancellations,
