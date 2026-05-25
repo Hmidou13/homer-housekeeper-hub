@@ -19,7 +19,7 @@ type InitialData = Partial<{
   lien_gps: string;
 }>;
 
-export function CreatePropertyModal({ onClose, initialData }: { onClose: (created?: boolean) => void; initialData?: InitialData }) {
+export function CreatePropertyModal({ onClose, initialData }: { onClose: (result: { created: boolean; propertyId?: string; propertyName?: string }) => void; initialData?: InitialData }) {
   const [form, setForm] = useState<any>({
     nom: initialData?.nom ?? "",
     type: initialData?.type ?? "Villa",
