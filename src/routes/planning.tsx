@@ -295,11 +295,39 @@ function PlanningPage() {
                   </td>
                   <td className="p-2">
                     {isNewGroup && (
-                      <span className={`px-2 py-0.5 rounded text-xs whitespace-nowrap ${typeInfo.cls}`}>
-                        {typeInfo.emoji} {typeInfo.label}
-                      </span>
+                      <div className="flex flex-col gap-1">
+                        <span className={`px-2 py-0.5 rounded text-xs whitespace-nowrap inline-block w-fit ${typeInfo.cls}`}>
+                          {typeInfo.emoji} {typeInfo.label}
+                        </span>
+                        {iv.cleaning.validation_requise && (
+                          <>
+                            <span className="px-2 py-0.5 rounded text-xs whitespace-nowrap inline-block w-fit bg-warning/20 text-warning-foreground border border-warning/40">
+                              🔔 À valider
+                            </span>
+                            <div className="flex gap-1">
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="h-6 text-xs px-2"
+                                onClick={async () => { if (await validerBlocageEnProprietaire(iv.cleaning_id)) refetch(); }}
+                              >
+                                ✓ Propriétaire
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                className="h-6 text-xs px-2"
+                                onClick={async () => { if (await annulerBlocage(iv.cleaning_id)) refetch(); }}
+                              >
+                                ✗ Annuler
+                              </Button>
+                            </div>
+                          </>
+                        )}
+                      </div>
                     )}
                   </td>
+
                   <td className="p-2">
                     <EquipeSelector cleaning={iv.cleaning} cc={iv.cc} ordre={iv.ordre} contractors={contractors} onChange={refetch} />
                   </td>
