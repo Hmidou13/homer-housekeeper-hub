@@ -99,7 +99,7 @@ export function CreatePropertyModal({ onClose, initialData }: { onClose: (result
           <F label="Téléphone propriétaire" value={form.proprietaire_telephone} onChange={(v) => setForm({ ...form, proprietaire_telephone: v })} />
         </div>
         <div className="flex justify-end gap-2 mt-4">
-          <Button variant="outline" onClick={() => onClose()}>Annuler</Button>
+          <Button variant="outline" onClick={() => onClose({ created: false })}>Annuler</Button>
           <Button onClick={save} disabled={saving}>{saving ? "Création…" : "Créer"}</Button>
         </div>
       </DialogContent>
