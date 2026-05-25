@@ -156,9 +156,33 @@ function ImportPage() {
       {createPropertyData && (
         <CreatePropertyModal
           initialData={createPropertyData}
-          onClose={(created) => {
+          onClose={async ({ created, propertyId, propertyName }) => {
             setCreatePropertyData(null);
-            if (created) toast.success("Maison créée. Relancez l'import pour intégrer le(s) ménage(s) concerné(s).");
+            if (!created || !propertyId || !propertyName) return;
+            try {
+              const allRows = [...(m?.rows ?? []), ...(r?.rows ?? [])];
+              const cascade = await importCleaningsForProperty(allRows, propertyId, propertyName);
+              if (cascade.created > 0 || cascade.updated > 0) {
+                toast.success(
+                  `✅ ${propertyName} créée — ${cascade.created} ménage(s) importé(s)` +
+                    (cascade.updated > 0 ? `, ${cascade.updated} mis à jour` : ""),
+                );
+                qc.invalidateQueries({ queryKey: ["planning"] });
+                qc.invalidateQueries({ queryKey: ["dashboard-cleanings"] });
+                qc.invalidateQueries({ queryKey: ["properties"] });
+              } else {
+                toast.success(`✅ ${propertyName} créée`);
+                qc.invalidateQueries({ queryKey: ["properties"] });
+              }
+              if (cascade.errors.length > 0) {
+                console.warn("Erreurs cascade :", cascade.errors);
+                toast.warning(`${cascade.errors.length} ligne(s) en erreur — voir console`);
+              }
+              setM((prev) => dropUnmatched(prev, propertyName));
+              setR((prev) => dropUnmatched(prev, propertyName));
+            } catch (e: any) {
+              toast.error(`Erreur lors de l'import cascade : ${e.message}`);
+            }
           }}
         />
       )}
