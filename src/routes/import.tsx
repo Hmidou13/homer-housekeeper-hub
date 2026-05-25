@@ -34,12 +34,28 @@ function ImportPage() {
   const [busy, setBusy] = useState(false);
   const [createPropertyData, setCreatePropertyData] = useState<any | null>(null);
   const [cancellations, setCancellations] = useState<CancellationInfo[]>([]);
+  const qc = useQueryClient();
 
   const onCreate = (u: UnmatchedRow) => setCreatePropertyData({
     nom: u.property_name,
     avantio_code: u.property_avantio_code ?? "",
     type: guessPropertyType(u.property_name),
   });
+
+  function dropUnmatched(prev: Preview | null, propertyName: string): Preview | null {
+    if (!prev?.result) return prev;
+    const target = propertyName.trim().toUpperCase();
+    return {
+      ...prev,
+      result: {
+        ...prev.result,
+        unmatched: prev.result.unmatched.filter(
+          (u) => (u.property_name ?? "").trim().toUpperCase() !== target,
+        ),
+      },
+    };
+  }
+
 
 
   return (
