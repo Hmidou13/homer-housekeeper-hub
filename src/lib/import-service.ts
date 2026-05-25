@@ -161,3 +161,85 @@ export async function importCleanings(rows: ParsedCleaning[]): Promise<ImportRes
   console.log("Détail non-matchés :", result.unmatched);
   return result;
 }
+
+/**
+ * Importe les ménages d'une maison fraîchement créée, parmi les lignes déjà parsées.
+ * Même logique de détection / protection que importCleanings (mêmes champs Avantio,
+ * notes_homer et observation préservés sur les ménages existants).
+ */
+export async function importCleaningsForProperty(
+  rows: ParsedCleaning[],
+  propertyId: string,
+  propertyName: string,
+): Promise<{ created: number; updated: number; skipped: number; errors: string[] }> {
+  const result = { created: 0, updated: 0, skipped: 0, errors: [] as string[] };
+  const target = propertyName.trim().toUpperCase();
+  const matching = rows.filter((r) => (r.property_name ?? "").trim().toUpperCase() === target);
+  if (matching.length === 0) return result;
+
+  const refs = matching.map((r) => r.avantio_reservation_no).filter(Boolean);
+  const existingMap = new Map<string, { id: string; statut: string }>();
+  if (refs.length > 0) {
+    const { data: existing } = await supabase
+      .from("cleanings")
+      .select("id, avantio_reservation_no, statut")
+      .in("avantio_reservation_no", refs);
+    (existing ?? []).forEach((e) => {
+      if (e.avantio_reservation_no) existingMap.set(e.avantio_reservation_no, { id: e.id, statut: e.statut ?? "planifie" });
+    });
+  }
+  const cleaningIds = [...existingMap.values()].map((e) => e.id);
+  const homerTouched = new Set<string>();
+  if (cleaningIds.length > 0) {
+    const { data: ccs } = await supabase
+      .from("cleaning_contractors")
+      .select("cleaning_id")
+      .in("cleaning_id", cleaningIds);
+    (ccs ?? []).forEach((c) => homerTouched.add(c.cleaning_id));
+  }
+
+  for (const row of matching) {
+    try {
+      const ex = existingMap.get(row.avantio_reservation_no);
+      if (!ex) {
+        const { error } = await supabase.from("cleanings").insert({
+          property_id: propertyId,
+          date_menage: row.date_menage,
+          type_menage: row.type_menage,
+          statut: "planifie",
+          avantio_reservation_no: row.avantio_reservation_no,
+          avantio_source: row.source,
+          equipe_avantio_info: row.equipe_avantio_info,
+          cas_serre: row.cas_serre,
+          nb_adultes_voyageurs: row.nb_adultes_voyageurs,
+          observation: row.observation,
+        });
+        if (error) throw error;
+        result.created++;
+      } else {
+        const hasHomerData = homerTouched.has(ex.id) || ex.statut !== "planifie";
+        if (hasHomerData) {
+          result.skipped++;
+        } else {
+          const { error } = await supabase
+            .from("cleanings")
+            .update({
+              property_id: propertyId,
+              date_menage: row.date_menage,
+              type_menage: row.type_menage,
+              avantio_source: row.source,
+              equipe_avantio_info: row.equipe_avantio_info,
+              cas_serre: row.cas_serre,
+              nb_adultes_voyageurs: row.nb_adultes_voyageurs,
+            })
+            .eq("id", ex.id);
+          if (error) throw error;
+          result.updated++;
+        }
+      }
+    } catch (e: any) {
+      result.errors.push(`${row.property_name} ${row.date_menage} : ${e.message}`);
+    }
+  }
+  return result;
+}
