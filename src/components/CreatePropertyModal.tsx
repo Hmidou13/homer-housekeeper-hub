@@ -53,7 +53,7 @@ export function CreatePropertyModal({ onClose, initialData }: { onClose: (result
     try {
       const code = form.avantio_code?.trim() || (await generateCode());
       const lien_gps = form.lien_gps?.trim() || genGpsLink(form.adresse_complete);
-      const { error } = await supabase.from("properties").insert({
+      const { data: created, error } = await supabase.from("properties").insert({
         nom: form.nom.trim(),
         type: form.type,
         localite: form.localite.trim(),
@@ -65,10 +65,10 @@ export function CreatePropertyModal({ onClose, initialData }: { onClose: (result
         client: form.client?.trim() || null,
         lien_gps: lien_gps || null,
         statut: "Actif",
-      });
+      }).select("id").single();
       if (error) throw error;
       toast.success(`Maison créée (${code})`);
-      onClose(true);
+      onClose({ created: true, propertyId: created.id, propertyName: form.nom.trim() });
     } catch (e: any) {
       toast.error(e.message ?? "Erreur");
     } finally {
