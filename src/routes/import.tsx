@@ -6,12 +6,14 @@ import { Upload } from "lucide-react";
 import { parseMenagesCsv, parseReservationsCsv, type ParsedCleaning } from "@/lib/csv-parsers";
 import {
   importCleanings,
+  importCleaningsForProperty,
   type ImportResult,
   type UnmatchedRow,
   detectCancellations,
   applyCancellations,
   type CancellationInfo,
 } from "@/lib/import-service";
+import { useQueryClient } from "@tanstack/react-query";
 import { CreatePropertyModal } from "@/components/CreatePropertyModal";
 import { guessPropertyType } from "@/lib/utils";
 import { formatFrDate } from "@/lib/time-utils";
