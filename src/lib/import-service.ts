@@ -235,6 +235,13 @@ export async function importCleaningsForProperty(
             .eq("id", ex.id);
           if (error) throw error;
           result.updated++;
+        }
+      }
+    } catch (e: any) {
+      result.errors.push(`${row.property_name} ${row.date_menage} : ${e.message}`);
+    }
+  }
+  return result;
 }
 
 /**
@@ -281,6 +288,7 @@ export async function refreshValidationFlags(
 
   return result;
 }
+
       }
     } catch (e: any) {
       result.errors.push(`${row.property_name} ${row.date_menage} : ${e.message}`);
