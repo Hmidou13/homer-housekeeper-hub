@@ -82,6 +82,7 @@ export type Database = {
           statut: string | null
           type_menage: string
           updated_at: string | null
+          validation_requise: boolean | null
         }
         Insert: {
           avantio_reservation_no?: string | null
@@ -99,6 +100,7 @@ export type Database = {
           statut?: string | null
           type_menage: string
           updated_at?: string | null
+          validation_requise?: boolean | null
         }
         Update: {
           avantio_reservation_no?: string | null
@@ -116,6 +118,7 @@ export type Database = {
           statut?: string | null
           type_menage?: string
           updated_at?: string | null
+          validation_requise?: boolean | null
         }
         Relationships: [
           {
