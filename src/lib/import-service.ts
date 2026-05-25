@@ -289,10 +289,3 @@ export async function refreshValidationFlags(
   return result;
 }
 
-      }
-    } catch (e: any) {
-      result.errors.push(`${row.property_name} ${row.date_menage} : ${e.message}`);
-    }
-  }
-  return result;
-}
