@@ -9,6 +9,7 @@ import { CleaningModal } from "@/components/CleaningModal";
 import { CreateCleaningModal } from "@/components/CreateCleaningModal";
 import { formatFrDate } from "@/lib/time-utils";
 import { Pencil } from "lucide-react";
+import { validerBlocageEnProprietaire, annulerBlocage } from "@/lib/blocage-actions";
 
 export const Route = createFileRoute("/planning")({ component: () => <RequireAuth><PlanningPage /></RequireAuth> });
 
