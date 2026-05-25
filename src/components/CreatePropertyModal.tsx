@@ -77,7 +77,7 @@ export function CreatePropertyModal({ onClose, initialData }: { onClose: (result
   }
 
   return (
-    <Dialog open onOpenChange={(o) => { if (!o) onClose(); }}>
+    <Dialog open onOpenChange={(o) => { if (!o) onClose({ created: false }); }}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader><DialogTitle>Nouvelle maison</DialogTitle></DialogHeader>
         <div className="grid grid-cols-2 gap-3 text-sm">
