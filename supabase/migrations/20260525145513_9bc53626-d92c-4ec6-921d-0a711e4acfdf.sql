@@ -1,0 +1,2 @@
+ALTER TABLE public.cleanings ADD COLUMN IF NOT EXISTS validation_requise boolean DEFAULT false;
+CREATE INDEX IF NOT EXISTS idx_cleanings_validation_requise ON public.cleanings (validation_requise) WHERE validation_requise = true;

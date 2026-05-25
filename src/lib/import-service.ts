@@ -243,3 +243,49 @@ export async function importCleaningsForProperty(
   }
   return result;
 }
+
+/**
+ * Identifie les blocages "bloque_a_arbitrer" suivis d'une réservation (voyageur
+ * ou propriétaire) sur la même maison et flagge validation_requise en conséquence.
+ * Recalcule à chaque appel — idempotente. Réinitialise le flag si la réservation
+ * future a disparu (annulation).
+ */
+export async function refreshValidationFlags(
+  _pendingCsvRows: ParsedCleaning[] = [],
+): Promise<{ flagged: number; unflagged: number }> {
+  const result = { flagged: 0, unflagged: 0 };
+
+  const { data: blocages, error } = await supabase
+    .from("cleanings")
+    .select("id, property_id, date_menage, validation_requise")
+    .eq("type_menage", "bloque_a_arbitrer")
+    .eq("statut", "planifie");
+
+  if (error || !blocages) return result;
+
+  for (const blocage of blocages) {
+    const { data: futureInDb } = await supabase
+      .from("cleanings")
+      .select("id")
+      .eq("property_id", blocage.property_id)
+      .gt("date_menage", blocage.date_menage)
+      .neq("type_menage", "bloque_a_arbitrer")
+      .neq("statut", "annule")
+      .limit(1);
+
+    const hasFollowingReservation = !!(futureInDb && futureInDb.length > 0);
+    const newFlag = hasFollowingReservation;
+
+    if (newFlag !== (blocage.validation_requise ?? false)) {
+      await supabase
+        .from("cleanings")
+        .update({ validation_requise: newFlag })
+        .eq("id", blocage.id);
+      if (newFlag) result.flagged++;
+      else result.unflagged++;
+    }
+  }
+
+  return result;
+}
+

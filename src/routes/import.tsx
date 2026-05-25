@@ -7,6 +7,7 @@ import { parseMenagesCsv, parseReservationsCsv, type ParsedCleaning } from "@/li
 import {
   importCleanings,
   importCleaningsForProperty,
+  refreshValidationFlags,
   type ImportResult,
   type UnmatchedRow,
   detectCancellations,
@@ -80,8 +81,10 @@ function ImportPage() {
           setBusy(true);
           const res = await importCleanings(m.rows);
           setM({ ...m, result: res });
+          const flag = await refreshValidationFlags();
           setBusy(false);
           toast.success(`${res.created} créés · ${res.updated} mis à jour · ${res.skipped} protégés`);
+          if (flag.flagged > 0) toast.info(`🔔 ${flag.flagged} blocage(s) à valider rapidement (voir Dashboard).`);
         }}
         busy={busy}
         onCreateProperty={onCreate}
@@ -105,8 +108,10 @@ function ImportPage() {
           setBusy(true);
           const res = await importCleanings(r.rows);
           setR({ ...r, result: res });
+          const flag = await refreshValidationFlags();
           setBusy(false);
           toast.success(`${res.created} créés · ${res.updated} mis à jour · ${res.skipped} protégés`);
+          if (flag.flagged > 0) toast.info(`🔔 ${flag.flagged} blocage(s) à valider rapidement (voir Dashboard).`);
         }}
         busy={busy}
         onCreateProperty={onCreate}

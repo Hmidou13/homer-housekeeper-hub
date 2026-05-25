@@ -1,8 +1,11 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useState } from "react";
 import { RequireAuth } from "@/components/RequireAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { formatFrDate } from "@/lib/time-utils";
+import { Button } from "@/components/ui/button";
+import { validerBlocageEnProprietaire, annulerBlocage } from "@/lib/blocage-actions";
 
 export const Route = createFileRoute("/dashboard")({ component: () => <RequireAuth><DashboardPage /></RequireAuth> });
 
@@ -12,13 +15,14 @@ function inDaysIso(n: number) { const d = new Date(); d.setDate(d.getDate() + n)
 function DashboardPage() {
   const today = todayIso();
   const in7 = inDaysIso(7);
+  const qc = useQueryClient();
 
   const { data: cleanings = [] } = useQuery({
     queryKey: ["dashboard-cleanings", today, in7],
     queryFn: async () => {
       const { data } = await supabase
         .from("cleanings")
-        .select("id, date_menage, type_menage, statut, cas_serre, property:property_id(nom)")
+        .select("id, date_menage, type_menage, statut, cas_serre, validation_requise, property:property_id(nom)")
         .gte("date_menage", today)
         .lte("date_menage", in7)
         .neq("statut", "annule");
@@ -37,6 +41,25 @@ function DashboardPage() {
       return data ?? [];
     },
   });
+
+  const { data: aValiderList = [] } = useQuery({
+    queryKey: ["dashboard-validation-requise"],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("cleanings")
+        .select("id, date_menage, property:property_id(nom)")
+        .eq("validation_requise", true)
+        .eq("statut", "planifie")
+        .order("date_menage", { ascending: true });
+      return data ?? [];
+    },
+  });
+
+  function refreshAfterAction() {
+    qc.invalidateQueries({ queryKey: ["dashboard-validation-requise"] });
+    qc.invalidateQueries({ queryKey: ["dashboard-cleanings"] });
+    qc.invalidateQueries({ queryKey: ["planning"] });
+  }
 
   const todayItems = cleanings.filter((c) => c.date_menage === today);
   const tStats = {
@@ -57,7 +80,9 @@ function DashboardPage() {
 
   const sansEquipe = cleanings.filter((c) => !cleaningIdsWithCC.has(c.id) && c.statut !== "annule").length;
   const casSerres = cleanings.filter((c) => c.cas_serre).length;
-  const aArbitrer = cleanings.filter((c) => c.type_menage === "bloque_a_arbitrer").length;
+  const blocages = cleanings.filter((c) => c.type_menage === "bloque_a_arbitrer");
+  const nbAValider = blocages.filter((b: any) => b.validation_requise).length;
+  const nbAArbitrer = blocages.filter((b: any) => !b.validation_requise).length;
 
   // Charge par équipe
   const chargeMap = new Map<string, number>();
@@ -101,11 +126,28 @@ function DashboardPage() {
             <Row label="👤 Sans équipe" v={sansEquipe} />
           </Link>
           <Row label="⏱️ Cas serrés" v={casSerres} />
+          <Row label="🔔 À valider" v={nbAValider} />
           <Link to="/planning" className="block hover:bg-muted/50 rounded px-1">
-            <Row label="🔒 À arbitrer" v={aArbitrer} />
+            <Row label="🔒 À arbitrer" v={nbAArbitrer} />
           </Link>
         </Card>
       </div>
+
+      {aValiderList.length > 0 && (
+        <section className="bg-warning/10 border border-warning/40 rounded-lg p-5">
+          <h2 className="text-sm font-semibold mb-1 text-warning-foreground">
+            🔔 Blocages à valider ({aValiderList.length})
+          </h2>
+          <p className="text-xs text-muted-foreground mb-3">
+            Ces périodes "Non Disponible" sont suivies d'une réservation — un ménage propriétaire est probablement nécessaire.
+          </p>
+          <ul className="space-y-2">
+            {aValiderList.map((c: any) => (
+              <ValidationRow key={c.id} cleaning={c} onResolved={refreshAfterAction} />
+            ))}
+          </ul>
+        </section>
+      )}
 
       <section className="bg-card rounded-lg border p-5">
         <h2 className="text-sm font-semibold mb-3 text-primary">Charge par équipe — 7 prochains jours</h2>
@@ -144,6 +186,32 @@ function DashboardPage() {
         )}
       </section>
     </div>
+  );
+}
+
+function ValidationRow({ cleaning, onResolved }: { cleaning: any; onResolved: () => void }) {
+  const [busy, setBusy] = useState(false);
+  async function onProprio() {
+    setBusy(true);
+    const ok = await validerBlocageEnProprietaire(cleaning.id);
+    setBusy(false);
+    if (ok) onResolved();
+  }
+  async function onAnnul() {
+    setBusy(true);
+    const ok = await annulerBlocage(cleaning.id);
+    setBusy(false);
+    if (ok) onResolved();
+  }
+  return (
+    <li className="flex flex-wrap items-center gap-2 bg-card rounded px-3 py-2 border">
+      <div className="flex-1 min-w-0">
+        <span className="font-medium">{cleaning.property?.nom ?? "—"}</span>
+        <span className="text-muted-foreground"> · {formatFrDate(cleaning.date_menage)}</span>
+      </div>
+      <Button size="sm" variant="outline" disabled={busy} onClick={onProprio}>✓ Propriétaire</Button>
+      <Button size="sm" variant="ghost" disabled={busy} onClick={onAnnul}>✗ Annuler</Button>
+    </li>
   );
 }
 

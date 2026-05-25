@@ -9,6 +9,7 @@ import { CleaningModal } from "@/components/CleaningModal";
 import { CreateCleaningModal } from "@/components/CreateCleaningModal";
 import { formatFrDate } from "@/lib/time-utils";
 import { Pencil } from "lucide-react";
+import { validerBlocageEnProprietaire, annulerBlocage } from "@/lib/blocage-actions";
 
 export const Route = createFileRoute("/planning")({ component: () => <RequireAuth><PlanningPage /></RequireAuth> });
 
@@ -80,7 +81,7 @@ function PlanningPage() {
     queryFn: async () => {
       const { data } = await supabase
         .from("cleanings")
-        .select(`id, date_menage, type_menage, statut, cas_serre, observation, notes_homer, nb_adultes_voyageurs, equipe_avantio_info, avantio_reservation_no, heure_certification,
+        .select(`id, date_menage, type_menage, statut, cas_serre, observation, notes_homer, nb_adultes_voyageurs, equipe_avantio_info, avantio_reservation_no, heure_certification, validation_requise,
           property:property_id(id, nom, client, adresse_complete, code_porte, code_alarme, wifi, particularites, proprietaire_telephone),
           ccs:cleaning_contractors(id, ordre, contractor_id, date_intervention, heure_arrivee, heure_depart, contractor:contractor_id(id, nom, telephone))`)
         .gte("date_menage", from)
@@ -294,11 +295,39 @@ function PlanningPage() {
                   </td>
                   <td className="p-2">
                     {isNewGroup && (
-                      <span className={`px-2 py-0.5 rounded text-xs whitespace-nowrap ${typeInfo.cls}`}>
-                        {typeInfo.emoji} {typeInfo.label}
-                      </span>
+                      <div className="flex flex-col gap-1">
+                        <span className={`px-2 py-0.5 rounded text-xs whitespace-nowrap inline-block w-fit ${typeInfo.cls}`}>
+                          {typeInfo.emoji} {typeInfo.label}
+                        </span>
+                        {iv.cleaning.validation_requise && (
+                          <>
+                            <span className="px-2 py-0.5 rounded text-xs whitespace-nowrap inline-block w-fit bg-warning/20 text-warning-foreground border border-warning/40">
+                              🔔 À valider
+                            </span>
+                            <div className="flex gap-1">
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="h-6 text-xs px-2"
+                                onClick={async () => { if (await validerBlocageEnProprietaire(iv.cleaning_id)) refetch(); }}
+                              >
+                                ✓ Propriétaire
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                className="h-6 text-xs px-2"
+                                onClick={async () => { if (await annulerBlocage(iv.cleaning_id)) refetch(); }}
+                              >
+                                ✗ Annuler
+                              </Button>
+                            </div>
+                          </>
+                        )}
+                      </div>
                     )}
                   </td>
+
                   <td className="p-2">
                     <EquipeSelector cleaning={iv.cleaning} cc={iv.cc} ordre={iv.ordre} contractors={contractors} onChange={refetch} />
                   </td>
