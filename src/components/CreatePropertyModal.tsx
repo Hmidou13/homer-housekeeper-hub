@@ -19,7 +19,7 @@ type InitialData = Partial<{
   lien_gps: string;
 }>;
 
-export function CreatePropertyModal({ onClose, initialData }: { onClose: (created?: boolean) => void; initialData?: InitialData }) {
+export function CreatePropertyModal({ onClose, initialData }: { onClose: (result: { created: boolean; propertyId?: string; propertyName?: string }) => void; initialData?: InitialData }) {
   const [form, setForm] = useState<any>({
     nom: initialData?.nom ?? "",
     type: initialData?.type ?? "Villa",
@@ -53,7 +53,7 @@ export function CreatePropertyModal({ onClose, initialData }: { onClose: (create
     try {
       const code = form.avantio_code?.trim() || (await generateCode());
       const lien_gps = form.lien_gps?.trim() || genGpsLink(form.adresse_complete);
-      const { error } = await supabase.from("properties").insert({
+      const { data: created, error } = await supabase.from("properties").insert({
         nom: form.nom.trim(),
         type: form.type,
         localite: form.localite.trim(),
@@ -65,10 +65,10 @@ export function CreatePropertyModal({ onClose, initialData }: { onClose: (create
         client: form.client?.trim() || null,
         lien_gps: lien_gps || null,
         statut: "Actif",
-      });
+      }).select("id").single();
       if (error) throw error;
       toast.success(`Maison créée (${code})`);
-      onClose(true);
+      onClose({ created: true, propertyId: created.id, propertyName: form.nom.trim() });
     } catch (e: any) {
       toast.error(e.message ?? "Erreur");
     } finally {
@@ -77,7 +77,7 @@ export function CreatePropertyModal({ onClose, initialData }: { onClose: (create
   }
 
   return (
-    <Dialog open onOpenChange={(o) => { if (!o) onClose(); }}>
+    <Dialog open onOpenChange={(o) => { if (!o) onClose({ created: false }); }}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader><DialogTitle>Nouvelle maison</DialogTitle></DialogHeader>
         <div className="grid grid-cols-2 gap-3 text-sm">
@@ -99,7 +99,7 @@ export function CreatePropertyModal({ onClose, initialData }: { onClose: (create
           <F label="Téléphone propriétaire" value={form.proprietaire_telephone} onChange={(v) => setForm({ ...form, proprietaire_telephone: v })} />
         </div>
         <div className="flex justify-end gap-2 mt-4">
-          <Button variant="outline" onClick={() => onClose()}>Annuler</Button>
+          <Button variant="outline" onClick={() => onClose({ created: false })}>Annuler</Button>
           <Button onClick={save} disabled={saving}>{saving ? "Création…" : "Créer"}</Button>
         </div>
       </DialogContent>

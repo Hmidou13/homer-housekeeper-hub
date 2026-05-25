@@ -6,12 +6,14 @@ import { Upload } from "lucide-react";
 import { parseMenagesCsv, parseReservationsCsv, type ParsedCleaning } from "@/lib/csv-parsers";
 import {
   importCleanings,
+  importCleaningsForProperty,
   type ImportResult,
   type UnmatchedRow,
   detectCancellations,
   applyCancellations,
   type CancellationInfo,
 } from "@/lib/import-service";
+import { useQueryClient } from "@tanstack/react-query";
 import { CreatePropertyModal } from "@/components/CreatePropertyModal";
 import { guessPropertyType } from "@/lib/utils";
 import { formatFrDate } from "@/lib/time-utils";
@@ -32,12 +34,28 @@ function ImportPage() {
   const [busy, setBusy] = useState(false);
   const [createPropertyData, setCreatePropertyData] = useState<any | null>(null);
   const [cancellations, setCancellations] = useState<CancellationInfo[]>([]);
+  const qc = useQueryClient();
 
   const onCreate = (u: UnmatchedRow) => setCreatePropertyData({
     nom: u.property_name,
     avantio_code: u.property_avantio_code ?? "",
     type: guessPropertyType(u.property_name),
   });
+
+  function dropUnmatched(prev: Preview | null, propertyName: string): Preview | null {
+    if (!prev?.result) return prev;
+    const target = propertyName.trim().toUpperCase();
+    return {
+      ...prev,
+      result: {
+        ...prev.result,
+        unmatched: prev.result.unmatched.filter(
+          (u) => (u.property_name ?? "").trim().toUpperCase() !== target,
+        ),
+      },
+    };
+  }
+
 
 
   return (
@@ -138,9 +156,33 @@ function ImportPage() {
       {createPropertyData && (
         <CreatePropertyModal
           initialData={createPropertyData}
-          onClose={(created) => {
+          onClose={async ({ created, propertyId, propertyName }) => {
             setCreatePropertyData(null);
-            if (created) toast.success("Maison créée. Relancez l'import pour intégrer le(s) ménage(s) concerné(s).");
+            if (!created || !propertyId || !propertyName) return;
+            try {
+              const allRows = [...(m?.rows ?? []), ...(r?.rows ?? [])];
+              const cascade = await importCleaningsForProperty(allRows, propertyId, propertyName);
+              if (cascade.created > 0 || cascade.updated > 0) {
+                toast.success(
+                  `✅ ${propertyName} créée — ${cascade.created} ménage(s) importé(s)` +
+                    (cascade.updated > 0 ? `, ${cascade.updated} mis à jour` : ""),
+                );
+                qc.invalidateQueries({ queryKey: ["planning"] });
+                qc.invalidateQueries({ queryKey: ["dashboard-cleanings"] });
+                qc.invalidateQueries({ queryKey: ["properties"] });
+              } else {
+                toast.success(`✅ ${propertyName} créée`);
+                qc.invalidateQueries({ queryKey: ["properties"] });
+              }
+              if (cascade.errors.length > 0) {
+                console.warn("Erreurs cascade :", cascade.errors);
+                toast.warning(`${cascade.errors.length} ligne(s) en erreur — voir console`);
+              }
+              setM((prev) => dropUnmatched(prev, propertyName));
+              setR((prev) => dropUnmatched(prev, propertyName));
+            } catch (e: any) {
+              toast.error(`Erreur lors de l'import cascade : ${e.message}`);
+            }
           }}
         />
       )}
