@@ -103,7 +103,7 @@ function MaisonsPage() {
         </table>
       </div>
       {openId && <PropertyModal id={openId} onClose={() => { setOpenId(null); refetch(); }} />}
-      {createOpen && <CreatePropertyModal onClose={(created) => { setCreateOpen(false); if (created) refetch(); }} />}
+      {createOpen && <CreatePropertyModal onClose={({ created }) => { setCreateOpen(false); if (created) refetch(); }} />}
     </div>
   );
 }
