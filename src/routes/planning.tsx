@@ -312,6 +312,22 @@ function PlanningPage() {
                         <span className={`px-2 py-0.5 rounded text-xs whitespace-nowrap inline-block w-fit ${typeInfo.cls}`}>
                           {typeInfo.emoji} {typeInfo.label}
                         </span>
+                        {iv.cleaning.nouveau && (
+                          <div className="flex items-center gap-1">
+                            <span
+                              className="text-xs px-1.5 py-0.5 rounded whitespace-nowrap text-white"
+                              style={{ backgroundColor: "#bb6f58" }}
+                            >
+                              ✨ Nouveau
+                            </span>
+                            <button
+                              className="text-xs text-muted-foreground hover:text-foreground hover:underline"
+                              onClick={async () => { if (await marquerVu(iv.cleaning_id)) qc.invalidateQueries({ queryKey: ["planning"] }); }}
+                            >
+                              ✓ Vu
+                            </button>
+                          </div>
+                        )}
                         {iv.cleaning.validation_requise && (
                           <>
                             <span className="px-2 py-0.5 rounded text-xs whitespace-nowrap inline-block w-fit bg-warning/20 text-warning-foreground border border-warning/40">
