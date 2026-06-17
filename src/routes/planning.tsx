@@ -338,7 +338,12 @@ function PlanningPage() {
                     <HeureInput cc={iv.cc} field="heure_depart" onChange={refetch} disabled={!iv.cc} />
                   </td>
                   <td className="p-2">
-                    {isNewGroup && <StatutSelector cleaning={iv.cleaning} onChange={refetch} />}
+                    {isNewGroup && (
+                      <div className="flex flex-col gap-1 items-start">
+                        <StatutSelector cleaning={iv.cleaning} onChange={refetch} />
+                        <NotifBadge ccs={iv.cleaning.ccs ?? []} />
+                      </div>
+                    )}
                   </td>
                   <td className="p-2 text-right">
                     {isNewGroup && (
