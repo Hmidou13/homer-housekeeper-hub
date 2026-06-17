@@ -1,0 +1,1 @@
+ALTER TABLE public.cleaning_contractors ADD COLUMN IF NOT EXISTS notifie_whatsapp_at timestamptz;
