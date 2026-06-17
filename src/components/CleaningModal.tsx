@@ -231,13 +231,28 @@ export function CleaningModal({ cleaningId, onClose }: { cleaningId: string; onC
                             <Copy className="h-3 w-3 mr-1" /> Copier
                           </Button>
                           {hasTel ? (
-                            <Button size="sm" onClick={() => openWaFor(message, telRaw)}>
-                              <MessageCircle className="h-3 w-3 mr-1" /> Ouvrir WhatsApp {prenom}
+                            <Button size="sm" onClick={() => openWaFor(message, telRaw, cc.id)}>
+                              <MessageCircle className="h-3 w-3 mr-1" />
+                              {cc.notifie_whatsapp_at ? "Renvoyer WhatsApp" : "Ouvrir WhatsApp"} {prenom}
                             </Button>
                           ) : (
                             <span className="text-xs text-destructive flex items-center gap-1">
                               ⚠️ Téléphone manquant pour {prenom} — Ajouter dans la page Équipes
                             </span>
+                          )}
+                          {cc.notifie_whatsapp_at && (
+                            <>
+                              <span className="text-xs text-success font-medium">
+                                ✓ Notifiée le {formatNotifDate(cc.notifie_whatsapp_at)}
+                              </span>
+                              <button
+                                type="button"
+                                onClick={() => annulerNotif(cc.id)}
+                                className="text-xs text-muted-foreground hover:text-foreground underline"
+                              >
+                                ↺ Annuler la notification
+                              </button>
+                            </>
                           )}
                         </div>
                       </div>
