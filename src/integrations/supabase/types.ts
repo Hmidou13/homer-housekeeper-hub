@@ -80,6 +80,7 @@ export type Database = {
           id: string
           nb_adultes_voyageurs: number | null
           notes_homer: string | null
+          nouveau: boolean
           observation: string | null
           property_id: string
           statut: string | null
@@ -98,6 +99,7 @@ export type Database = {
           id?: string
           nb_adultes_voyageurs?: number | null
           notes_homer?: string | null
+          nouveau?: boolean
           observation?: string | null
           property_id: string
           statut?: string | null
@@ -116,6 +118,7 @@ export type Database = {
           id?: string
           nb_adultes_voyageurs?: number | null
           notes_homer?: string | null
+          nouveau?: boolean
           observation?: string | null
           property_id?: string
           statut?: string | null

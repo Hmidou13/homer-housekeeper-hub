@@ -1,0 +1,1 @@
+ALTER TABLE public.cleanings ADD COLUMN IF NOT EXISTS nouveau boolean NOT NULL DEFAULT false;

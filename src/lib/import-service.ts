@@ -126,6 +126,7 @@ export async function importCleanings(rows: ParsedCleaning[]): Promise<ImportRes
         cas_serre: row.cas_serre,
         nb_adultes_voyageurs: row.nb_adultes_voyageurs,
         observation: row.observation,
+        nouveau: true,
       });
       if (!error) result.created++;
     } else {
@@ -213,6 +214,7 @@ export async function importCleaningsForProperty(
           cas_serre: row.cas_serre,
           nb_adultes_voyageurs: row.nb_adultes_voyageurs,
           observation: row.observation,
+          nouveau: true,
         });
         if (error) throw error;
         result.created++;

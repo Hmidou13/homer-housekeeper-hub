@@ -10,6 +10,7 @@ import { CreateCleaningModal } from "@/components/CreateCleaningModal";
 import { formatFrDate } from "@/lib/time-utils";
 import { Pencil } from "lucide-react";
 import { validerBlocageEnProprietaire, annulerBlocage } from "@/lib/blocage-actions";
+import { marquerVu, marquerTousVus } from "@/lib/nouveau-actions";
 
 export const Route = createFileRoute("/planning")({ component: () => <RequireAuth><PlanningPage /></RequireAuth> });
 
@@ -81,7 +82,7 @@ function PlanningPage() {
     queryFn: async () => {
       const { data } = await supabase
         .from("cleanings")
-        .select(`id, date_menage, type_menage, statut, cas_serre, observation, notes_homer, nb_adultes_voyageurs, equipe_avantio_info, avantio_reservation_no, heure_certification, validation_requise,
+        .select(`id, date_menage, type_menage, statut, cas_serre, observation, notes_homer, nb_adultes_voyageurs, equipe_avantio_info, avantio_reservation_no, heure_certification, validation_requise, nouveau,
           property:property_id(id, nom, client, adresse_complete, code_porte, code_alarme, wifi, particularites, proprietaire_telephone),
           ccs:cleaning_contractors(id, ordre, contractor_id, date_intervention, heure_arrivee, heure_depart, notifie_whatsapp_at, contractor:contractor_id(id, nom, telephone))`)
         .gte("date_menage", from)
@@ -204,7 +205,19 @@ function PlanningPage() {
         </div>
       </div>
 
-      <div className="flex justify-end">
+      <div className="flex justify-end gap-2">
+        {(() => {
+          const n = cleaningsFiltered.filter((c: any) => c.nouveau).length;
+          if (n === 0) return null;
+          return (
+            <Button
+              variant="outline"
+              onClick={async () => { if (await marquerTousVus()) qc.invalidateQueries({ queryKey: ["planning"] }); }}
+            >
+              ✓ Tout marquer comme vu ({n})
+            </Button>
+          );
+        })()}
         <Button onClick={() => setCreateOpen(true)}>+ Nouveau ménage</Button>
       </div>
 
@@ -299,6 +312,22 @@ function PlanningPage() {
                         <span className={`px-2 py-0.5 rounded text-xs whitespace-nowrap inline-block w-fit ${typeInfo.cls}`}>
                           {typeInfo.emoji} {typeInfo.label}
                         </span>
+                        {iv.cleaning.nouveau && (
+                          <div className="flex items-center gap-1">
+                            <span
+                              className="text-xs px-1.5 py-0.5 rounded whitespace-nowrap text-white"
+                              style={{ backgroundColor: "#bb6f58" }}
+                            >
+                              ✨ Nouveau
+                            </span>
+                            <button
+                              className="text-xs text-muted-foreground hover:text-foreground hover:underline"
+                              onClick={async () => { if (await marquerVu(iv.cleaning_id)) qc.invalidateQueries({ queryKey: ["planning"] }); }}
+                            >
+                              ✓ Vu
+                            </button>
+                          </div>
+                        )}
                         {iv.cleaning.validation_requise && (
                           <>
                             <span className="px-2 py-0.5 rounded text-xs whitespace-nowrap inline-block w-fit bg-warning/20 text-warning-foreground border border-warning/40">
