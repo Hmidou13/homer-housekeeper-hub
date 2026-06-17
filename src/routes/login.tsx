@@ -9,11 +9,10 @@ import { toast } from "sonner";
 export const Route = createFileRoute("/login")({ component: LoginPage });
 
 function LoginPage() {
-  const { user, signIn, signUp } = useAuth();
+  const { user, signIn } = useAuth();
   const nav = useNavigate();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [mode, setMode] = useState<"in" | "up">("in");
   const [busy, setBusy] = useState(false);
 
   useEffect(() => { if (user) nav({ to: "/dashboard" }); }, [user, nav]);
@@ -21,11 +20,9 @@ function LoginPage() {
   async function submit(e: React.FormEvent) {
     e.preventDefault();
     setBusy(true);
-    const fn = mode === "in" ? signIn : signUp;
-    const { error } = await fn(email, password);
+    const { error } = await signIn(email, password);
     setBusy(false);
     if (error) toast.error(error);
-    else if (mode === "up") toast.success("Compte créé. Vous pouvez vous connecter.");
   }
 
   return (
@@ -34,7 +31,7 @@ function LoginPage() {
         <div className="mb-6">
           <h1 className="text-2xl font-semibold text-primary">Homer Conciergerie</h1>
           <p className="text-sm text-muted-foreground mt-1">
-            {mode === "in" ? "Connectez-vous pour accéder au pilotage." : "Créer un compte."}
+            Connectez-vous pour accéder au pilotage.
           </p>
         </div>
         <form onSubmit={submit} className="space-y-4">
@@ -47,15 +44,11 @@ function LoginPage() {
             <Input id="password" type="password" required minLength={6} value={password} onChange={(e) => setPassword(e.target.value)} />
           </div>
           <Button type="submit" className="w-full" disabled={busy}>
-            {busy ? "…" : mode === "in" ? "Se connecter" : "Créer le compte"}
+            {busy ? "…" : "Se connecter"}
           </Button>
-          <button
-            type="button"
-            onClick={() => setMode(mode === "in" ? "up" : "in")}
-            className="text-sm text-muted-foreground hover:text-foreground w-full text-center"
-          >
-            {mode === "in" ? "Pas encore de compte ? Créer un compte" : "Déjà un compte ? Se connecter"}
-          </button>
+          <p className="text-xs text-muted-foreground text-center">
+            Accès réservé. Contactez le bureau pour obtenir un compte.
+          </p>
         </form>
       </div>
     </div>
