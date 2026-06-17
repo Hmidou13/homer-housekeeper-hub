@@ -86,14 +86,31 @@ export function CleaningModal({ cleaningId, onClose }: { cleaningId: string; onC
     navigator.clipboard.writeText(message);
     toast.success(`Message pour ${prenom} copié`);
   }
-  function openWaFor(message: string, telRaw: string) {
+  async function openWaFor(message: string, telRaw: string, ccId: string) {
     const tel = normalizePhoneFr(telRaw);
     if (!tel) {
       toast.error("Numéro de téléphone invalide");
       return;
     }
+    await supabase.from("cleaning_contractors").update({ notifie_whatsapp_at: new Date().toISOString() } as any).eq("id", ccId);
     const url = `https://wa.me/${tel}?text=${encodeURIComponent(message)}`;
     window.open(url, "_blank", "noopener,noreferrer");
+    refetchCleaning();
+  }
+
+  async function annulerNotif(ccId: string) {
+    await supabase.from("cleaning_contractors").update({ notifie_whatsapp_at: null } as any).eq("id", ccId);
+    refetchCleaning();
+    toast.success("Notification annulée");
+  }
+
+  function formatNotifDate(iso: string): string {
+    const d = new Date(iso);
+    const dd = String(d.getDate()).padStart(2, "0");
+    const mm = String(d.getMonth() + 1).padStart(2, "0");
+    const hh = String(d.getHours()).padStart(2, "0");
+    const mn = String(d.getMinutes()).padStart(2, "0");
+    return `${dd}/${mm} à ${hh}:${mn}`;
   }
 
   const sortedCcs = [...ccs].sort((a, b) => (a.ordre ?? 0) - (b.ordre ?? 0));
