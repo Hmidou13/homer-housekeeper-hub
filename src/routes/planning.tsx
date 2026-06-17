@@ -83,7 +83,7 @@ function PlanningPage() {
         .from("cleanings")
         .select(`id, date_menage, type_menage, statut, cas_serre, observation, notes_homer, nb_adultes_voyageurs, equipe_avantio_info, avantio_reservation_no, heure_certification, validation_requise,
           property:property_id(id, nom, client, adresse_complete, code_porte, code_alarme, wifi, particularites, proprietaire_telephone),
-          ccs:cleaning_contractors(id, ordre, contractor_id, date_intervention, heure_arrivee, heure_depart, contractor:contractor_id(id, nom, telephone))`)
+          ccs:cleaning_contractors(id, ordre, contractor_id, date_intervention, heure_arrivee, heure_depart, notifie_whatsapp_at, contractor:contractor_id(id, nom, telephone))`)
         .gte("date_menage", from)
         .lte("date_menage", to)
         .order("date_menage");
@@ -338,7 +338,12 @@ function PlanningPage() {
                     <HeureInput cc={iv.cc} field="heure_depart" onChange={refetch} disabled={!iv.cc} />
                   </td>
                   <td className="p-2">
-                    {isNewGroup && <StatutSelector cleaning={iv.cleaning} onChange={refetch} />}
+                    {isNewGroup && (
+                      <div className="flex flex-col gap-1 items-start">
+                        <StatutSelector cleaning={iv.cleaning} onChange={refetch} />
+                        <NotifBadge ccs={iv.cleaning.ccs ?? []} />
+                      </div>
+                    )}
                   </td>
                   <td className="p-2 text-right">
                     {isNewGroup && (
@@ -451,4 +456,18 @@ function StatutSelector({ cleaning, onChange }: any) {
       <option value="annule">Annulé</option>
     </select>
   );
+}
+
+function NotifBadge({ ccs }: { ccs: any[] }) {
+  const affectees = (ccs ?? []).filter((cc) => cc.contractor_id);
+  const total = affectees.length;
+  if (total === 0) return null;
+  const notifiees = affectees.filter((cc) => cc.notifie_whatsapp_at).length;
+  if (notifiees === 0) {
+    return <span className="text-xs px-1.5 py-0.5 rounded whitespace-nowrap bg-muted text-muted-foreground">📨 Non notifié</span>;
+  }
+  if (notifiees < total) {
+    return <span className="text-xs px-1.5 py-0.5 rounded whitespace-nowrap text-white" style={{ backgroundColor: "#E67E22" }}>📨 {notifiees}/{total} notifiées</span>;
+  }
+  return <span className="text-xs px-1.5 py-0.5 rounded whitespace-nowrap text-white" style={{ backgroundColor: "#27AE60" }}>📨 Notifié</span>;
 }

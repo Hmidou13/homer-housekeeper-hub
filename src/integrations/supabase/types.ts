@@ -23,6 +23,7 @@ export type Database = {
           heure_arrivee: string | null
           heure_depart: string | null
           id: string
+          notifie_whatsapp_at: string | null
           ordre: number | null
           updated_at: string | null
         }
@@ -34,6 +35,7 @@ export type Database = {
           heure_arrivee?: string | null
           heure_depart?: string | null
           id?: string
+          notifie_whatsapp_at?: string | null
           ordre?: number | null
           updated_at?: string | null
         }
@@ -45,6 +47,7 @@ export type Database = {
           heure_arrivee?: string | null
           heure_depart?: string | null
           id?: string
+          notifie_whatsapp_at?: string | null
           ordre?: number | null
           updated_at?: string | null
         }
