@@ -205,7 +205,19 @@ function PlanningPage() {
         </div>
       </div>
 
-      <div className="flex justify-end">
+      <div className="flex justify-end gap-2">
+        {(() => {
+          const n = cleaningsFiltered.filter((c: any) => c.nouveau).length;
+          if (n === 0) return null;
+          return (
+            <Button
+              variant="outline"
+              onClick={async () => { if (await marquerTousVus()) qc.invalidateQueries({ queryKey: ["planning"] }); }}
+            >
+              ✓ Tout marquer comme vu ({n})
+            </Button>
+          );
+        })()}
         <Button onClick={() => setCreateOpen(true)}>+ Nouveau ménage</Button>
       </div>
 
