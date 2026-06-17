@@ -457,3 +457,17 @@ function StatutSelector({ cleaning, onChange }: any) {
     </select>
   );
 }
+
+function NotifBadge({ ccs }: { ccs: any[] }) {
+  const affectees = (ccs ?? []).filter((cc) => cc.contractor_id);
+  const total = affectees.length;
+  if (total === 0) return null;
+  const notifiees = affectees.filter((cc) => cc.notifie_whatsapp_at).length;
+  if (notifiees === 0) {
+    return <span className="text-xs px-1.5 py-0.5 rounded whitespace-nowrap bg-muted text-muted-foreground">📨 Non notifié</span>;
+  }
+  if (notifiees < total) {
+    return <span className="text-xs px-1.5 py-0.5 rounded whitespace-nowrap text-white" style={{ backgroundColor: "#E67E22" }}>📨 {notifiees}/{total} notifiées</span>;
+  }
+  return <span className="text-xs px-1.5 py-0.5 rounded whitespace-nowrap text-white" style={{ backgroundColor: "#27AE60" }}>📨 Notifié</span>;
+}
